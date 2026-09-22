@@ -9,7 +9,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import IfmError, data_value
-from .const import DEFAULT_INTERVAL, DOMAIN, PORT_PROPERTIES, port_path
+from .const import DEFAULT_INTERVAL, DOMAIN, MASTER_DIAGNOSTIC_PATHS, PORT_PROPERTIES, port_path
 from .decoder import decode
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,21 +26,34 @@ class IfmCoordinator(DataUpdateCoordinator):
         )
         self.entry, self.client, self.identity, self.library = entry, client, identity, library
         self.metadata = {}
-        self.metadata_at = 0
+        self.metadata_at = None
         self.condition_values = {}
+        self.master_diagnostics = {}
         self.samples = {str(port): deque(maxlen=30) for port in range(1, identity["ports"] + 1)}
 
     async def _async_update_data(self):
-        refresh_metadata = time.monotonic() - self.metadata_at >= 60
-        paths = []
+        # time.monotonic()'s absolute value is arbitrary (e.g. time since boot on Linux), so it can
+        # already be under 60 on a freshly booted host; metadata_at must start at None, not 0.
+        refresh_metadata = self.metadata_at is None or time.monotonic() - self.metadata_at >= 60
+        paths = list(MASTER_DIAGNOSTIC_PATHS)
         for port in range(1, self.identity["ports"] + 1):
             paths.extend(port_path(port, name) for name in ("pdin", "status"))
+            paths.append(f"/iolinkmaster/port[{port}]/pin2in")
+            # Gated on the device's own last-known mode too, not just the saved assignment: right
+            # after a mode switch (or if a port was put into DO some other way) the assignment can
+            # briefly lag the device, and skipping the read then would leave pdout stuck at None.
+            assignment_mode = self.entry.options.get("ports", {}).get(str(port), {}).get("mode")
+            known_mode = self.metadata.get(str(port), {}).get("mode")
+            if 2 in (assignment_mode, known_mode) or refresh_metadata:
+                paths.append(port_path(port, "pdout"))
             if refresh_metadata:
                 paths.extend(port_path(port, name) for name in PORT_PROPERTIES if name != "status")
+                paths.append(f"/iolinkmaster/port[{port}]/mode")
         try:
             response = await self.client.multi(paths)
         except IfmError as err:
             raise UpdateFailed(str(err)) from err
+        self.master_diagnostics = self._diagnostics_from(response)
         now = dt_util.utcnow().isoformat()
         result = {}
         for port in range(1, self.identity["ports"] + 1):
@@ -50,6 +63,7 @@ class IfmCoordinator(DataUpdateCoordinator):
                 identity.update(
                     {name: data_value(response, port_path(port, name)) for name in PORT_PROPERTIES if name != "status"}
                 )
+                identity["mode"] = data_value(response, f"/iolinkmaster/port[{port}]/mode")
             status = data_value(response, port_path(port, "status"))
             identity["status"] = status
             raw = data_value(response, port_path(port, "pdin"))
@@ -88,6 +102,16 @@ class IfmCoordinator(DataUpdateCoordinator):
                 "port": port,
                 "identity": dict(identity),
                 "raw": raw,
+                "pin2": data_value(response, f"/iolinkmaster/port[{port}]/pin2in"),
+                "mode": identity.get("mode"),
+                "pdout": (
+                    data_value(response, port_path(port, "pdout"))
+                    if 2 in (assignment.get("mode"), identity.get("mode"))
+                    else None
+                ),
+                "pin4": (
+                    (raw not in (None, "00")) if 1 in (assignment.get("mode"), identity.get("mode")) else None
+                ),
                 "connected": connected,
                 "profile": profile_id,
                 "assignment": assignment,
@@ -109,6 +133,18 @@ class IfmCoordinator(DataUpdateCoordinator):
             self.metadata_at = time.monotonic()
         return result
 
+    @staticmethod
+    def _diagnostics_from(response):
+        """Master-level health values; ifm reports no direct power register, so it is derived from U x I."""
+        temperature = data_value(response, "/processdatamaster/temperature")
+        voltage_mv = data_value(response, "/processdatamaster/voltage")
+        current_ma = data_value(response, "/processdatamaster/current")
+        status = data_value(response, "/processdatamaster/supervisionstatus")
+        voltage = voltage_mv / 1000 if isinstance(voltage_mv, (int, float)) else None
+        current = current_ma / 1000 if isinstance(current_ma, (int, float)) else None
+        power = voltage * current if voltage is not None and current is not None else None
+        return {"temperature": temperature, "voltage": voltage, "current": current, "power": power, "status": status}
+
     def snapshot(self):
         return {
             "entry_id": self.entry.entry_id,
@@ -117,6 +153,7 @@ class IfmCoordinator(DataUpdateCoordinator):
             "online": self.last_update_success,
             "interval": self.entry.options.get("interval", DEFAULT_INTERVAL),
             "ports": self.data or {},
+            "diagnostics": self.master_diagnostics,
         }
 
     def diagnostic(self, port=None):

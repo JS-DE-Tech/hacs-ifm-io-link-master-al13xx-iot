@@ -23,6 +23,7 @@ PROFILE_KEYS = {
     "length",
     "parameters",
     "conditions",
+    "commands",
 }
 FIELD_KEYS = {
     "key",
@@ -42,6 +43,9 @@ FIELD_KEYS = {
     "invalid_when",
     "precision",
     "mask",
+    "min",
+    "max",
+    "values",
 }
 
 
@@ -158,6 +162,29 @@ def validate_profile(profile: dict, *, custom: bool = False) -> dict:
             if field["type"] != "bool":
                 raise ValueError("mask wird nur für binäre Sammelmeldungen unterstützt")
             _integer(field["mask"], 1, (1 << (size * 8 - shift)) - 1, f"{key}.mask")
+        if "min" in field or "max" in field:
+            # Raw-value bounds narrower than the bit width, e.g. a device accepting only 0-100 of a uint8.
+            if field["type"] not in ("uint", "int"):
+                raise ValueError(f"{key}: min/max nur für uint oder int erlaubt")
+            bits = field.get("bits", size * 8 - shift)
+            bit_lo, bit_hi = (-(1 << (bits - 1)), (1 << (bits - 1)) - 1) if field["type"] == "int" else (0, (1 << bits) - 1)
+            lo, hi = field.get("min", bit_lo), field.get("max", bit_hi)
+            if type(lo) is not int or type(hi) is not int or not bit_lo <= lo <= hi <= bit_hi:
+                raise ValueError(f"{key}: min/max müssen ganzzahlig sein, im Wertebereich liegen und min <= max erfüllen")
+        if "values" in field:
+            # A fixed set of accepted raw values, e.g. a 0/25/50/75/100 brightness enum rather than a range.
+            if field["type"] not in ("uint", "int"):
+                raise ValueError(f"{key}: values nur für uint oder int erlaubt")
+            bits = field.get("bits", size * 8 - shift)
+            bit_lo, bit_hi = (-(1 << (bits - 1)), (1 << (bits - 1)) - 1) if field["type"] == "int" else (0, (1 << bits) - 1)
+            values = field["values"]
+            if (
+                not isinstance(values, list)
+                or not 1 <= len(values) <= 64
+                or len(set(values)) != len(values)
+                or any(type(v) is not int or not bit_lo <= v <= bit_hi for v in values)
+            ):
+                raise ValueError(f"{key}: values muss eine Liste eindeutiger Ganzzahlen im Wertebereich sein")
         invalid = field.get("invalid_values", [])
         if (
             not isinstance(invalid, list)
@@ -201,6 +228,25 @@ def validate_profile(profile: dict, *, custom: bool = False) -> dict:
             if not isinstance(parameter["decoder"], dict) or "parameters" in parameter["decoder"]:
                 raise ValueError("Verschachtelte Parameter sind nicht erlaubt")
             validate_profile(parameter["decoder"])
+    commands = profile.get("commands", [])
+    if not isinstance(commands, list) or len(commands) > 64:
+        raise ValueError("Maximal 64 Kommandos erlaubt")
+    seen_commands = set()
+    for command in commands:
+        if not isinstance(command, dict) or set(command) - {"index", "name", "description", "value"}:
+            raise ValueError("Ungültige Kommandodefinition")
+        _integer(command.get("index"), 0, 65535, "Kommandoindex")
+        _integer(command.get("value"), 0, 255, "Kommandowert")
+        # Several named commands commonly share one "system command" index with distinct
+        # values (e.g. calibrate-empty/calibrate-full) - only the (index, value) pair must
+        # be unique, not the index alone.
+        key = (command["index"], command["value"])
+        if key in seen_commands:
+            raise ValueError("Kommando (Index + Wert) muss innerhalb des Profils eindeutig sein")
+        seen_commands.add(key)
+        for label in ("name", "description"):
+            if not isinstance(command.get(label, ""), str) or len(command.get(label, "")) > 4000:
+                raise ValueError("Ungültiger Kommandotext")
     return profile
 
 
@@ -241,3 +287,68 @@ def decode(profile: dict, hex_data: str) -> dict:
             value = round(value, field.get("precision", 3)) if math.isfinite(value) else None
         result[field["key"]] = value
     return result
+
+
+def parameter_entity_kind(parameter: dict) -> str:
+    """'select' for a fixed set of accepted values, 'number' for a writable range, else 'sensor'."""
+    decoder = parameter.get("decoder")
+    if not decoder or len(decoder.get("fields", [])) != 1:
+        return "sensor"
+    field = decoder["fields"][0]
+    if field["type"] not in ("uint", "int") or parameter.get("access") != "rw":
+        return "sensor"
+    size = field.get("length", TYPES[field["type"]] or 1)
+    trivial = field.get("offset", 0) == 0 and field.get("shift", 0) == 0 and field.get("bits", size * 8) == size * 8
+    if not trivial:
+        return "sensor"
+    return "select" if "values" in field else "number"
+
+
+def _raw_bounds(field: dict) -> tuple[int, int]:
+    """Raw-value bounds: the field's explicit min/max if given, else the full bit width."""
+    size = field.get("length", TYPES[field["type"]] or 1)
+    bits = field.get("bits", size * 8)
+    bit_lo, bit_hi = (-(1 << (bits - 1)), (1 << (bits - 1)) - 1) if field["type"] == "int" else (0, (1 << bits) - 1)
+    return field.get("min", bit_lo), field.get("max", bit_hi)
+
+
+def numeric_range(field: dict) -> tuple[float, float]:
+    """Value bounds for a full-byte int/uint field, after scale and add."""
+    scale = field.get("scale", 1)
+    add = field.get("add", 0)
+    lo, hi = _raw_bounds(field)
+    bounds = (lo * scale + add, hi * scale + add)
+    return min(bounds), max(bounds)
+
+
+def encode_parameter(parameter: dict, value) -> str:
+    """Encode a number into the raw hex for a writable full-byte int/uint parameter."""
+    if parameter_entity_kind(parameter) not in ("number", "select"):
+        raise ValueError("Parameter unterstützt keine Zahlenkodierung")
+    if type(value) not in (int, float) or not math.isfinite(value):
+        raise ValueError("Ungültiger Zahlenwert")
+    field = parameter["decoder"]["fields"][0]
+    size = field.get("length", TYPES[field["type"]] or 1)
+    scale = field.get("scale", 1)
+    add = field.get("add", 0)
+    raw = round((value - add) / scale) if scale else int(value)
+    if "values" in field:
+        if raw not in field["values"]:
+            raise ValueError("Wert ist keine gültige Auswahl für diesen Parameter")
+    else:
+        lo, hi = _raw_bounds(field)
+        if not lo <= raw <= hi:
+            raise ValueError("Wert außerhalb des zulässigen Bereichs")
+    return raw.to_bytes(size, field.get("endian", "big"), signed=(field["type"] == "int")).hex().upper()
+
+
+def encode_command(command: dict) -> str:
+    """Encode a command's fixed value as the single raw byte IO-Link expects (uint8, subindex 0)."""
+    return command["value"].to_bytes(1, "big").hex().upper()
+
+
+def select_values(field: dict) -> list[float]:
+    """The field's fixed accepted values, scaled to the exposed value domain."""
+    scale = field.get("scale", 1)
+    add = field.get("add", 0)
+    return [raw * scale + add for raw in field["values"]]

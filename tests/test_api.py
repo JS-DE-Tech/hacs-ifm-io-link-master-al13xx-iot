@@ -147,3 +147,59 @@ def test_failed_parameter_write_is_not_retried():
 
     asyncio.run(serve(handler, check))
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize("payload", [{"code": 200}, {"code": 200, "data": None}, {"code": 200, "data": {}}])
+def test_port_mode_write_payload_and_empty_success(payload):
+    calls = []
+
+    async def handler(request):
+        calls.append(await request.json())
+        return web.json_response(payload)
+
+    async def check(client):
+        assert await client.write_port_mode(3, 2) == {}
+
+    asyncio.run(serve(handler, check))
+    assert calls == [
+        {"code": "request", "cid": 1, "adr": "/iolinkmaster/port[3]/mode/setdata", "data": {"newvalue": 2}}
+    ]
+
+
+@pytest.mark.parametrize(
+    "port,mode", [(0, 3), (9, 3), ("1", 3), (1, 4), (1, -1), (1, "3"), (1, None)]
+)
+def test_port_mode_write_rejects_invalid_port_or_mode(port, mode):
+    async def check():
+        client = IfmClient(None, "http://localhost")
+        with pytest.raises(ValueError):
+            await client.write_port_mode(port, mode)
+
+    asyncio.run(check())
+
+
+@pytest.mark.parametrize("on,expected", [(True, "01"), (False, "00")])
+def test_port_output_write_payload(on, expected):
+    calls = []
+
+    async def handler(request):
+        calls.append(await request.json())
+        return web.json_response({"code": 200})
+
+    async def check(client):
+        assert await client.write_port_output(7, on) == {}
+
+    asyncio.run(serve(handler, check))
+    assert calls == [
+        {"code": "request", "cid": 1, "adr": "/iolinkmaster/port[7]/iolinkdevice/pdout/setdata", "data": {"newvalue": expected}}
+    ]
+
+
+@pytest.mark.parametrize("port,on", [(0, True), (9, True), ("1", True), (1, "on"), (1, 1), (1, None)])
+def test_port_output_write_rejects_invalid_port_or_value(port, on):
+    async def check():
+        client = IfmClient(None, "http://localhost")
+        with pytest.raises(ValueError):
+            await client.write_port_output(port, on)
+
+    asyncio.run(check())

@@ -13,22 +13,26 @@ from homeassistant.components import websocket_api
 
 from .api import IfmError
 from .const import DOMAIN
-from .decoder import decode, validate_profile
+from .decoder import decode, encode_command, validate_profile
 from .iodd import import_iodd
-from .parameters import collect_parameters, read_parameter_value
+from .parameters import collect_parameters, read_identity, read_parameter_value
+from .port_mode import execute_mode_change, prepare_mode_change
 from .restore import execute_restore, prepare_restore
+from .version import installed_version
 
 
 def register_commands(hass):
     for command in (
         snapshot,
         assign,
+        set_parameter_entities,
         save_profile,
         delete_profile,
         debug,
         test_profile,
         import_profile,
         read_parameter,
+        send_command,
         read_parameters,
         get_parameter_backup,
         rename_master,
@@ -36,6 +40,8 @@ def register_commands(hass):
         preview_restore,
         restore_parameters,
         get_restore_report,
+        preview_port_mode,
+        set_port_mode,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -59,6 +65,7 @@ async def snapshot(hass, connection, message):
     result = {
         "masters": [item.snapshot() for item in data["coordinators"].values()],
         "profile_revision": data["library"].revision,
+        "version": installed_version(),
     }
     if message["include_profiles"]:
         result["profiles"] = list(data["library"].all.values())
@@ -88,9 +95,47 @@ async def assign(hass, connection, message):
         for name in ("name", "location", "purpose"):
             if len(message[name]) > 500:
                 raise ValueError("Metadaten dürfen höchstens 500 Zeichen enthalten")
+        current = coordinator.entry.options.get("ports", {}).get(str(message["port"]), {})
+        # Selected parameter entities are profile-specific; drop them if the profile changes.
+        entities = current.get("entities", []) if current.get("profile") == message["profile"] else []
         ports = {
             **coordinator.entry.options.get("ports", {}),
-            str(message["port"]): {key: message[key].strip() for key in ("profile", "name", "location", "purpose")},
+            str(message["port"]): {
+                **current,
+                **{key: message[key].strip() for key in ("profile", "name", "location", "purpose")},
+                "entities": entities,
+            },
+        }
+        hass.config_entries.async_update_entry(coordinator.entry, options={**coordinator.entry.options, "ports": ports})
+        connection.send_result(message["id"], {"saved": True})
+    except ValueError as err:
+        connection.send_error(message["id"], "invalid_input", str(err))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "ifm_iolink/set_parameter_entities",
+        vol.Required("entry_id"): str,
+        vol.Required("port"): int,
+        vol.Required("indices"): [int],
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def set_parameter_entities(hass, connection, message):
+    try:
+        coordinator = coordinator_for(hass, message)
+        assignment = coordinator.entry.options.get("ports", {}).get(str(message["port"]), {})
+        profile = coordinator.library.all.get(assignment.get("profile"))
+        if not profile:
+            raise ValueError("Dem Port ist kein Profil zugewiesen")
+        available = {p["index"] for p in profile.get("parameters", [])}
+        indices = sorted({int(index) for index in message["indices"]})
+        if len(indices) > 256 or any(index not in available for index in indices):
+            raise ValueError("Ungültige Parameterauswahl")
+        ports = {
+            **coordinator.entry.options.get("ports", {}),
+            str(message["port"]): {**assignment, "entities": indices},
         }
         hass.config_entries.async_update_entry(coordinator.entry, options={**coordinator.entry.options, "ports": ports})
         connection.send_result(message["id"], {"saved": True})
@@ -154,6 +199,45 @@ async def read_parameter(hass, connection, message):
         connection.send_result(message["id"], result)
     except (ValueError, IfmError) as err:
         connection.send_error(message["id"], "read_failed", str(err))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "ifm_iolink/send_command",
+        vol.Required("entry_id"): str,
+        vol.Required("port"): int,
+        vol.Required("index"): int,
+        vol.Required("value"): int,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def send_command(hass, connection, message):
+    try:
+        coordinator = coordinator_for(hass, message)
+        port_state = coordinator.data[str(message["port"])]
+        if not port_state["connected"]:
+            raise ValueError("Port nicht verbunden")
+        profile = coordinator.library.all.get(port_state["profile"], {})
+        # Several named commands can share one index with different values (e.g. a
+        # "system command" parameter), so both must match to identify the right one.
+        command = next(
+            (c for c in profile.get("commands", []) if c["index"] == message["index"] and c["value"] == message["value"]),
+            None,
+        )
+        if not command:
+            raise ValueError("Kommando nicht im zugewiesenen Profil")
+        identity = await read_identity(coordinator, message["port"])
+        matches = profile.get("match", [])
+        if matches and all(
+            identity.get("vendorid") != m["vendorid"] or identity.get("deviceid") != m["deviceid"] for m in matches
+        ):
+            raise ValueError("Gerätekennung passt nicht zum zugewiesenen Profil")
+        raw = encode_command(command)
+        await coordinator.client.write_parameter(message["port"], command["index"], raw)
+        connection.send_result(message["id"], {"sent": True})
+    except (ValueError, IfmError) as err:
+        connection.send_error(message["id"], "command_failed", str(err))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "ifm_iolink/delete_profile", vol.Required("profile_id"): str})
@@ -386,6 +470,7 @@ async def restore_parameters(hass, connection, message):
         if (
             not message["confirm"]
             or not saved
+            or "plan" not in saved
             or saved["expires"] <= time.monotonic()
             or saved["user"] != connection.user.id
             or saved["key"] != key
@@ -425,3 +510,93 @@ async def get_restore_report(hass, connection, message):
         connection.send_result(message["id"], {"report": report})
     except ValueError as err:
         connection.send_error(message["id"], "invalid_input", str(err))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "ifm_iolink/preview_port_mode",
+        vol.Required("entry_id"): str,
+        vol.Required("port"): int,
+        vol.Required("target_mode"): int,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def preview_port_mode(hass, connection, message):
+    backups = hass.data[DOMAIN]["parameter_backups"]
+    key = (message["entry_id"], message["port"])
+    if key in backups.busy:
+        connection.send_error(message["id"], "busy", "Parameteraktion an diesem Port läuft bereits")
+        return
+    backups.busy.add(key)
+    try:
+        coordinator = coordinator_for(hass, message)
+        plan = await prepare_mode_change(coordinator, message["port"], message["target_mode"])
+        backups.plans = {token: value for token, value in backups.plans.items() if value["expires"] > time.monotonic()}
+        if len(backups.plans) >= 16:
+            raise ValueError("Zu viele offene Vorschauen; später erneut versuchen")
+        token = secrets.token_urlsafe(24)
+        backups.plans[token] = {
+            "expires": time.monotonic() + 300,
+            "user": connection.user.id,
+            "key": key,
+            "coordinator": coordinator,
+            "mode_plan": plan,
+        }
+        connection.send_result(message["id"], {"token": token, "expires_in": 300, **plan})
+    except (ValueError, IfmError) as err:
+        connection.send_error(message["id"], "port_mode_preview_failed", str(err))
+    finally:
+        backups.busy.discard(key)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "ifm_iolink/set_port_mode",
+        vol.Required("entry_id"): str,
+        vol.Required("port"): int,
+        vol.Required("token"): str,
+        vol.Required("confirm"): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def set_port_mode(hass, connection, message):
+    backups = hass.data[DOMAIN]["parameter_backups"]
+    key = (message["entry_id"], message["port"])
+    if key in backups.busy:
+        connection.send_error(message["id"], "busy", "Parameteraktion an diesem Port läuft bereits")
+        return
+    backups.busy.add(key)
+    try:
+        saved = backups.plans.get(message["token"])
+        if (
+            not message["confirm"]
+            or not saved
+            or "mode_plan" not in saved
+            or saved["expires"] <= time.monotonic()
+            or saved["user"] != connection.user.id
+            or saved["key"] != key
+        ):
+            raise ValueError("Bestätigung fehlt oder Vorschau ist abgelaufen; neue Vorschau erstellen")
+        coordinator = coordinator_for(hass, message)
+        if coordinator is not saved["coordinator"]:
+            raise ValueError("Master wurde seit der Vorschau neu geladen")
+        backups.plans.pop(message["token"])
+        result = await execute_mode_change(
+            coordinator,
+            message["port"],
+            saved["mode_plan"],
+            still_current=lambda: hass.data[DOMAIN]["coordinators"].get(key[0]) is coordinator,
+        )
+        ports = {**coordinator.entry.options.get("ports", {})}
+        updated = {**ports.get(str(message["port"]), {}), "mode": result["mode"]}
+        if result["mode"] != 3:
+            updated["profile"], updated["entities"] = "unknown", []
+        ports[str(message["port"])] = updated
+        hass.config_entries.async_update_entry(coordinator.entry, options={**coordinator.entry.options, "ports": ports})
+        connection.send_result(message["id"], result)
+    except (ValueError, IfmError) as err:
+        connection.send_error(message["id"], "port_mode_failed", str(err))
+    finally:
+        backups.busy.discard(key)

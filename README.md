@@ -8,12 +8,15 @@
 
 <p align="center"><strong>Industriesensorik für dein Smart Home.<br>Pool, Heizung und Druckluft – lokal verbunden und gemeinsam im Blick.</strong></p>
 
+[![Version](https://img.shields.io/badge/version-0.8.2-blue)](https://github.com/100prznt/hacs-ifm-io-link-master-al13xx-iot/blob/main/custom_components/ifm_iolink/manifest.json)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
 [![HACS](https://img.shields.io/badge/HACS-Custom%20Repository-41BDF5)](https://www.hacs.xyz/)
-[![Tests](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/actions/workflows/tests.yml/badge.svg)](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/actions/workflows/tests.yml)
+[![Tests](https://github.com/100prznt/hacs-ifm-io-link-master-al13xx-iot/actions/workflows/tests.yml/badge.svg)](https://github.com/100prznt/hacs-ifm-io-link-master-al13xx-iot/actions/workflows/tests.yml)
 [![Local](https://img.shields.io/badge/Verbindung-Lokal-success)](#funktionen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/LICENSE)
 [![Unterstützen via PayPal](https://img.shields.io/badge/Support%20via-PayPal-0070BA?logo=paypal&logoColor=white)](https://paypal.me/JensSaffrich)
+
+> 🔀 **Dies ist ein Fork.** Dieses Repository ist ein Fork von [JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot), weiterentwickelt von [100prznt](https://github.com/100prznt). Er enthält zusätzliche, hier entstandene Änderungen gegenüber dem Original – siehe [Änderungen in diesem Fork](#änderungen-in-diesem-fork).
 
 Das **ifm IO-Link Command Center** verbindet die IO-Link-Master **AL1350 und AL1352 mit IoT Core** direkt mit Home Assistant. Druck, Durchfluss, Temperatur und Gerätezustände werden zu nutzbaren Entitäten für Dashboards, Verläufe und eigene Automationen – ohne Cloud, MQTT-Broker oder Node-RED als Zwischenstation.
 
@@ -22,12 +25,24 @@ Im grafischen Command Center steht der Master in der Mitte. Seine Ports führen 
 **Ein Projekt von [JS-DE-Tech](https://github.com/JS-DE-Tech), entstanden aus einer realen Pool-, Heizungs- und Druckluftinstallation.**
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/main/docs/images/screenshots/portuebersicht.png" alt="Command Center: AL1350 mit verbundenen Sensoren, Live-Messwerten und Portzuweisung" width="1100">
+  <img src="docs/images/screenshots/portuebersicht_v0_7.png" alt="Command Center: AL1352 mit verbundenen Sensoren, Live-Messwerten, Portzuweisung und DIO-Anzeige" width="1100">
 </p>
 
 <p align="center"><a href="#funktionen">Funktionen</a> · <a href="#mein-praxisprojekt">Praxisprojekt</a> · <a href="#installation">Installation</a> · <a href="#parametersicherung--sensortausch">Parametersicherung</a> · <a href="#eigene-ger%C3%A4te--iodd-import">Eigene Geräte</a></p>
 
-> **Stand 0.1.3:** Erste öffentliche Testversion. AL1350, PN7094, PN7096 und BADU FlowSonic Plus wurden an einer realen Anlage mit Home Assistant 2026.8.3 geprüft. AL1352 wird im Code unterstützt, ist aber noch nicht an realer Hardware getestet. Die Oberfläche des Command Centers ist derzeit deutsch.
+
+## Änderungen in diesem Fork
+
+Gegenüber dem Original-Projekt von JS-DE-Tech ergänzt dieser Fork bisher:
+
+- **Parameter als Home-Assistant-Entity (ab 0.2.0):** Herstellerparameter lassen sich in der Parameterliste je Port gezielt auswählen und als eigene Entity anlegen – als `sensor` (nur lesend) oder, bei schreibbaren Ganzzahlparametern, als `number` (freier Wertebereich) oder `select` (feste Werteliste, z. B. Prozentstufen), jeweils auch aus Home Assistant heraus setzbar. Alle drei werden unabhängig vom schnellen Prozessdaten-Poll gelesen: beim Hinzufügen, nach jeder Änderung und stündlich. Details unter [Parameter als Home-Assistant-Entity](docs/device-profiles.md#parameter-als-home-assistant-entity).
+- **Master-Diagnose als Entity (ab 0.3.0):** Versorgungsspannung, Leistungsaufnahme (aus Spannung × Strom berechnet, da der Master selbst keinen Leistungswert liefert), Temperatur und Supervision-Status des Masters (AL1350/AL1352 selbst, nicht der angeschlossenen Sensoren) stehen als eigene `sensor`- bzw. `binary_sensor`-Entität zur Verfügung und werden zusätzlich als Kennzahl auf der Portübersicht angezeigt.
+- **Digitaleingang Pin 2 als Entity (ab 0.4.0):** Pin 2 jedes IO-Link-Ports ist hardwareseitig immer ein digitaler Eingang, unabhängig vom Portmodus oder einem zugewiesenen Geräteprofil. Steht ab sofort als eigene `binary_sensor`-Entität je Port zur Verfügung und wird zusätzlich im Command Center angezeigt.
+- **Portmodus-Umschaltung für Pin 4 (ab 0.5.0):** Pin 4 (C/Q) jedes Ports lässt sich im Command Center zwischen IO-Link-Kommunikation und Digitalausgang umschalten – mit geprüfter Vorschau und Bestätigung, analog zur Parameter-Wiederherstellung, da ein Wechsel einen ggf. angeschlossenen IO-Link-Sensor vom Port trennt. Ein Port im DO-Modus bekommt zusätzlich eine eigene `switch`-Entität für den reinen Ausgangszustand (an/aus) – automatisierbar wie jede andere Home-Assistant-Entity.
+- **Versionsanzeige (ab 0.6.0):** Der Footer der Portübersicht zeigt die installierte Version. Für Update-Benachrichtigungen selbst ist bewusst kein eigener Mechanismus eingebaut – das übernimmt HACS bereits über seine eigene `update`-Entity (sichtbar unter Einstellungen → Geräte & Dienste bzw. der Updates-Übersicht), sobald für dieses Repository Releases gepflegt werden.
+- **Pin-2/Pin-4-Status direkt auf der Portkarte (ab 0.6.1):** Neben dem Steckernamen (X01, X02, …) zeigt ein kleines Badge live den Zustand des Digitaleingangs (Pin 2); ist ein Port als Digitalausgang konfiguriert, kommt ein zweites Badge für dessen Schaltzustand dazu, und die Kartenmitte zeigt statt „Gerät auswählen“ direkt „Digitalausgang (Pin 4) · 24 V, max. 300 mA“.
+- **Pin 4 auch als Digitaleingang, volle Modusauswahl (ab 0.7.0):** Pin 4 (C/Q) lässt sich jetzt zwischen IO-Link, Digitalausgang, Digitaleingang und Deaktiviert umschalten (vorher nur IO-Link/Digitalausgang) – über eine echte Auswahl statt eines einzelnen Umschalt-Buttons, weiterhin mit Vorschau und Bestätigung. Im Digitaleingang-Modus bekommt Pin 4 eine eigene `binary_sensor`-Entity, und die Portkarte zeigt für alle drei Nicht-IO-Link-Modi eine passende Kurzbeschreibung samt Badges (`DI2`/`DI4`/`DO`).
+- **Herstellerspezifische Kommandos (ab 0.8.0):** Geräteprofile können jetzt eigene, nicht in der IODD beschriebene Schreibkommandos definieren – fester Index und Ganzzahlwert, z. B. um eine Kalibrierung zu starten oder einen Werksreset auszulösen. Im Command Center erscheinen sie unter **Kommandos anzeigen** direkt neben der Parameterliste; ein Klick sendet den festen Wert sofort. Vor dem Senden wird die Gerätekennung frisch gegen das Profil geprüft, damit ein zwischenzeitlich getauschter Sensor nicht versehentlich denselben Befehl erhält. Details unter [Profilformat und Beispiele](docs/device-profiles.md).
 
 ## Funktionen
 
@@ -44,8 +59,14 @@ Im grafischen Command Center steht der Master in der Mitte. Seine Ports führen 
 | **Parameter gezielt lesen** | Einzelne Werte oder alle im Profil hinterlegten Herstellerparameter auf Knopfdruck abfragen. |
 | **Sichern und wiederherstellen** | Parametersicherung am Port, JSON-Export/-Import, geprüfte Vorschau und Protokoll des Wiederherstellungsversuchs. |
 | **Home-Assistant-Entitäten** | Sensoren und binäre Sensoren für Messwerte und Zustände; damit eigene Diagramme, Meldungen und Automationen erstellen. |
+| **Parameter als Entity** | In der Parameterliste je Port gezielt Herstellerparameter auswählen; daraus entsteht eine eigene `sensor`-Entity (nur lesend) oder – bei schreibbaren Ganzzahlparametern – eine `number`- oder `select`-Entity, die sich auch aus Home Assistant heraus setzen lässt. |
+| **Master-Diagnose als Entity** | Versorgungsspannung, Leistungsaufnahme, Temperatur und Supervision-Status des Masters selbst als `sensor`- bzw. `binary_sensor`-Entität sowie als Kennzahl auf der Portübersicht. |
+| **Digitaleingang Pin 2 als Entity** | Pin 2 jedes IO-Link-Ports ist hardwareseitig immer ein digitaler Eingang, unabhängig von Portmodus oder zugewiesenem Profil – als eigene `binary_sensor`-Entität je Port verfügbar. |
+| **Portmodus-Umschaltung (Pin 4)** | Im Command Center zwischen IO-Link, Digitalausgang, Digitaleingang und Deaktiviert wechseln – mit Vorschau und Bestätigung, da ein Wechsel einen angeschlossenen Sensor vom Port trennt. Im DO-Modus steht der Ausgangszustand als `switch`-Entität, im DI-Modus der Eingangszustand als `binary_sensor`-Entität zur Verfügung. |
+| **Versionsanzeige** | Installierte Version direkt auf der Portübersicht sichtbar. Updates selbst zeigt HACS über seine eigene `update`-Entity an. |
+| **Herstellerspezifische Kommandos** | Im Profil hinterlegte, feste Schreibkommandos (Index + Ganzzahlwert) für Aktionen, die nicht in der IODD stehen, z. B. eine Kalibrierung starten – direkt aus dem Command Center senden. |
 
-Die laufende Messwerterfassung liest die Geräte. **Schreibzugriffe erfolgen bei einer ausdrücklich bestätigten Parameterwiederherstellung.** Master-Netzwerkeinstellungen und IO-Link-Portbetriebsart werden durch diese Integration nicht eingerichtet.
+Die laufende Messwerterfassung liest die Geräte. Als Entity ausgewählte Herstellerparameter werden beim Start, nach jeder Änderung und stündlich gelesen. **Darüber hinaus erfolgen Schreibzugriffe nur bei einer ausdrücklich bestätigten Parameterwiederherstellung oder beim Setzen einer Parameter-`number`-Entity.** Master-Netzwerkeinstellungen werden durch diese Integration nicht eingerichtet; die IO-Link-Portbetriebsart (IO-Link/Digitalausgang/Digitaleingang/Deaktiviert) lässt sich seit 0.5.0 ausschließlich über die geprüfte Vorschau im Command Center ändern, nie automatisch oder per Automation.
 
 ## Ein Blick ins Command Center
 
@@ -115,6 +136,11 @@ Der abgebildete Splitter trägt die Modellbezeichnung **POE-SP02BT-POE** und bie
 | **ifm AL1352** | IoT-Master mit acht IO-Link-Ports | Implementiert; Hardwaretest ausstehend |
 | **ifm PN7094** | Druck, Gerätestatus, OUT1/OUT2; Profile für Default und Status B | Status B an realen Sensoren geprüft |
 | **ifm PN7096** | Druck, Gerätestatus, OUT1/OUT2; Profile für Default und Status B | Status B an realen Sensoren geprüft |
+| **ifm LDH292** | Luftfeuchte, Temperatur, Gerätestatus | Implementiert; Hardwaretest ausstehend |
+| **ifm PG1406** | Druck (-0,124…2,5 bar), Gerätestatus | Implementiert; Hardwaretest ausstehend |
+| **ifm SM9000** | Durchfluss (5…300 l/min), Totalisator, Temperatur, OUT1/OUT2 | Implementiert; Hardwaretest ausstehend |
+| **ifm SV4200** | Durchfluss (1,0…20,0 l/min), Temperatur, OUT1/OUT2 | Implementiert; Hardwaretest ausstehend |
+| **ifm KQ1000** | Füllstand (Distanz), Gerätestatus, OUT1/OUT2/OUT3; Tankabgleich-Kommandos (leer/voll), Werksreset, Blinken | Implementiert; Hardwaretest ausstehend |
 | **Speck BADU FlowSonic Plus** | Durchfluss, Temperatur, zwei Summenzähler und Zustandsflags | Reale Messwerte und Node-RED-Zuordnung geprüft |
 | **Weitere IO-Link-Geräte** | IODD-Import oder eigenes JSON-Profil | Abhängig von Geräteformat und unterstützten Datentypen |
 
@@ -162,7 +188,7 @@ Unter **Sensortausch & Sicherung** stehen die Aktionen in dieser Reihenfolge:
 
 Beim Sensortausch müssen Gerätekennung und Profil passen; die Seriennummer des Ersatzgeräts darf von der ursprünglichen abweichen. Unterstützte schreibbare Parameter werden einzeln übertragen und zurückgelesen. Unveränderte Werte, reine Lesewerte und Systembefehle werden ausgelassen. Bei einem Fehler stoppt der Vorgang; bereits übertragene Werte bleiben bestehen. Das Protokoll dokumentiert den erreichten Stand, es gibt keinen automatischen Rollback.
 
-Gesichert wird der **im Profil enthaltene Parameterumfang**, kein vollständiges Geräteabbild. Beim BADU sind derzeit drei verifizierte Format-/Einheitenparameter hinterlegt. Die automatische IO-Link-Data-Storage-Funktion des Masters ist davon unabhängig und wird hier nicht aktiviert. Details und Grenzen: [Technische Hinweise](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/technical-notes.md).
+Gesichert wird der **im Profil enthaltene Parameterumfang**, kein vollständiges Geräteabbild. Beim BADU sind derzeit drei verifizierte Format-/Einheitenparameter hinterlegt. Die automatische IO-Link-Data-Storage-Funktion des Masters ist davon unabhängig und wird hier nicht aktiviert. Details und Grenzen: [Technische Hinweise](docs/technical-notes.md).
 
 ## Eigene Geräte & IODD-Import
 
@@ -170,7 +196,36 @@ In der **Gerätebibliothek** eine Hersteller-IODD als ZIP oder XML importieren, 
 
 Der Import unterstützt unter anderem Ganzzahlen, Boolesche Werte, IEEE-754-Floats, einfache Records, Bitpositionen und statische Skalierungen. Nicht unterstützte oder uneindeutige Angaben werden als Hinweise angezeigt. Je nach Sensor kann eine Ergänzung des Profils erforderlich sein.
 
-Ohne passende IODD lässt sich ein Gerät als **Unbekannt** zuweisen und eine Debug-Datei exportieren. Daraus kann ein eigenes JSON-Übersetzungsprofil entstehen, das sich direkt im Command Center testen, mit Bild und Beschreibung versehen und anschließend mehreren Ports zuweisen lässt. Profile beschreiben die Datenübersetzung; sie enthalten keinen ausführbaren Python- oder JavaScript-Code. [Profilformat und Beispiele](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/device-profiles.md)
+Ohne passende IODD lässt sich ein Gerät als **Unbekannt** zuweisen und eine Debug-Datei exportieren. Daraus kann ein eigenes JSON-Übersetzungsprofil entstehen, das sich direkt im Command Center testen, mit Bild und Beschreibung versehen und anschließend mehreren Ports zuweisen lässt. Profile beschreiben die Datenübersetzung; sie enthalten keinen ausführbaren Python- oder JavaScript-Code. [Profilformat und Beispiele](docs/device-profiles.md)
+
+### Eigene Kommandos definieren
+
+Ein Kommando schreibt einen festen Ganzzahlwert auf Index/Subindex 0 des Sensors – gedacht für Herstellerbefehle, die nicht in der IODD stehen, z. B. „Kalibrierung starten“. Im Profileditor gehört dazu ein `commands`-Array auf oberster Ebene, neben `parameters`:
+
+```json
+{
+  "commands": [
+    {
+      "index": 2,
+      "value": 208,
+      "name": "Leeren Tank abgleichen",
+      "description": "Kalibriert den Sensor auf den leeren Tank"
+    },
+    {
+      "index": 2,
+      "value": 209,
+      "name": "Vollen Tank abgleichen",
+      "description": "Kalibriert den Sensor auf den vollen Tank"
+    }
+  ]
+}
+```
+
+- `index`: Parameterindex (0–65535). Mehrere Kommandos dürfen sich denselben Index teilen, wie hier – typisch für einen „System Command“-Parameter, bei dem verschiedene Werte verschiedene Befehle auslösen. Eindeutig sein muss die Kombination aus `index` **und** `value`.
+- `value`: der zu schreibende Wert, ein einzelnes Byte (0–255). Subindex ist immer 0.
+- `name`, `description`: Beschriftung und Hilfetext für den „Senden“-Button im Command Center.
+
+Im Command Center erscheint das Kommando unter **Kommandos anzeigen** neben der Parameterliste; ein Klick auf **Senden** schreibt den Wert sofort, ohne weiteren Bestätigungsdialog. Vor jedem Senden wird die Gerätekennung frisch gegen `match` geprüft, damit ein zwischenzeitlich getauschter, andersartiger Sensor nicht versehentlich denselben Befehl bekommt.
 
 ## Entwicklung, Tests und Rückmeldungen
 
@@ -184,7 +239,7 @@ node --check custom_components/ifm_iolink/frontend/panel.js
 
 Mit `python scripts/preview.py` startet eine lokale Oberflächen-Demo unter `http://127.0.0.1:8765/`. Sie arbeitet ausschließlich mit Beispielwerten. Das Installationspaket erstellt `python scripts/package.py`.
 
-**150 automatisierte Tests** decken unter anderem Dekodierung, IODD-Import, API-Fehler und Wiederherstellungsprüfungen ab. Eine Wiederherstellung ohne Wertänderungen wurde an einem realen PN7094 geprüft; tatsächliche Änderungen und Fehlerfälle wurden bislang simuliert. [Prüfumfang](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/validation.md)
+**249 automatisierte Tests** decken unter anderem Dekodierung, IODD-Import, API-Fehler und Wiederherstellungsprüfungen ab. Eine Wiederherstellung ohne Wertänderungen wurde an einem realen PN7094 geprüft; tatsächliche Änderungen und Fehlerfälle wurden bislang simuliert. [Prüfumfang](docs/validation.md)
 
 Fehler, Erfahrungen mit dem AL1352 und neue Sensorprofile sind als [GitHub-Issue](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/issues) willkommen. Bitte Modell, Firmware, Integrationsversion und den beobachteten Fehler nennen. Debug-Dateien und Sicherungen vor dem öffentlichen Hochladen auf private Bezeichnungen, Seriennummern und sonstige anlagenspezifische Angaben prüfen.
 
@@ -196,6 +251,6 @@ Dir gefällt die Integration und du möchtest ihre Weiterentwicklung unterstütz
 
 ## Lizenz und Projekt
 
-Der selbst erstellte Programmcode steht unter der [MIT-Lizenz](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/LICENSE). Herstellerbilder, IODD-Auszüge, Logos und Produktnamen behalten ihre jeweiligen Rechte. Die Praxisfotos stammen von JS-DE-Tech. [Bild- und Quellenhinweise](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/assets.md)
+Der selbst erstellte Programmcode steht unter der [MIT-Lizenz](LICENSE). Herstellerbilder, IODD-Auszüge, Logos und Produktnamen behalten ihre jeweiligen Rechte. Die Praxisfotos stammen von JS-DE-Tech. [Bild- und Quellenhinweise](docs/assets.md)
 
 Dies ist eine unabhängige Community-Integration von **JS-DE-Tech**, kein offizielles Produkt von ifm, Speck oder JUMO.

@@ -1,0 +1,1213 @@
+{
+  "image": "data:image/png;base64,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",
+  "commands": [
+    {
+      "index": 2,
+      "value": 130,
+      "name": "Auslieferungszustand wiederherstellen",
+      "description": "SysCmd130"
+    },
+    {
+      "index": 2,
+      "value": 170,
+      "name": "Tankabgleiche zurücksetzen",
+      "description": "SysCmd170"
+    },
+    {
+      "index": 2,
+      "value": 208,
+      "name": "Leeren Tank abgleichen",
+      "description": "SysCmd208"
+    },
+    {
+      "index": 2,
+      "value": 209,
+      "name": "Vollen Tank abgleichen",
+      "description": "SysCmd209"
+    },
+    {
+      "index": 2,
+      "value": 222,
+      "name": "Blinken An",
+      "description": "SysCmd222"
+    },
+    {
+      "index": 2,
+      "value": 223,
+      "name": "Blinken Aus",
+      "description": "SysCmd223"
+    }
+  ],
+  "id": "custom_310_924_kq1000_0",
+  "name": "ifm KQ1000",
+  "manufacturer": "ifm electronic gmbh",
+  "model": "KQ1000",
+  "description": "Kapazitiver Füllstandssensor",
+  "purpose": "",
+  "source": "ifm-00039C-20190806-IODD1.1.xml",
+  "notes": "pd_1: Einheitencode 1342 noch nicht übersetzt; Einheit im Profil ergänzen",
+  "match": [
+    {
+      "vendorid": 310,
+      "deviceid": 924
+    }
+  ],
+  "length": 4,
+  "fields": [
+    {
+      "key": "pd_1",
+      "name": "PDV1",
+      "type": "int",
+      "offset": 0,
+      "length": 2,
+      "shift": 0,
+      "bits": 16,
+      "precision": 0,
+      "scale": 1,
+      "add": 0,
+      "unit": "mm",
+      "device_class": "distance",
+      "state_class": "measurement",
+      "invalid_values": [
+        32764
+      ]
+    },
+    {
+      "key": "pd_2",
+      "name": "Gerätestatus",
+      "type": "uint",
+      "offset": 3,
+      "length": 1,
+      "shift": 4,
+      "bits": 4,
+      "precision": 0
+    },
+    {
+      "key": "pd_3",
+      "name": "OUT3",
+      "type": "bool",
+      "offset": 3,
+      "length": 1,
+      "shift": 2,
+      "bits": 1,
+      "precision": 0
+    },
+    {
+      "key": "pd_4",
+      "name": "OUT2",
+      "type": "bool",
+      "offset": 3,
+      "length": 1,
+      "shift": 1,
+      "bits": 1,
+      "precision": 0
+    },
+    {
+      "key": "pd_5",
+      "name": "OUT1",
+      "type": "bool",
+      "offset": 3,
+      "length": 1,
+      "shift": 0,
+      "bits": 1,
+      "precision": 0
+    }
+  ],
+  "parameters": [
+    {
+      "index": 25,
+      "name": "Anlagenkennzeichen",
+      "description": "Beschreibt die Gerätefunktion",
+      "access": "rw",
+      "datatype": "StringT",
+      "default": "***"
+    },
+    {
+      "index": 26,
+      "name": "Ortskennzeichen",
+      "description": "Beschreibt den Installationsort",
+      "access": "rw",
+      "datatype": "StringT",
+      "default": "***"
+    },
+    {
+      "index": 350,
+      "name": "OUT1 Zähler",
+      "description": "Ausgang 1, Schaltzähler",
+      "access": "ro",
+      "datatype": "IntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "OUT1 Zähler",
+        "length": 4,
+        "fields": [
+          {
+            "key": "value",
+            "name": "OUT1 Zähler",
+            "type": "int",
+            "offset": 0,
+            "length": 4,
+            "shift": 0,
+            "bits": 32,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 0,
+            "max": 2000000000
+          }
+        ]
+      }
+    },
+    {
+      "index": 351,
+      "name": "OUT2 Zähler",
+      "description": "Ausgang 2, Schaltzähler",
+      "access": "ro",
+      "datatype": "IntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "OUT2 Zähler",
+        "length": 4,
+        "fields": [
+          {
+            "key": "value",
+            "name": "OUT2 Zähler",
+            "type": "int",
+            "offset": 0,
+            "length": 4,
+            "shift": 0,
+            "bits": 32,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 0,
+            "max": 2000000000
+          }
+        ]
+      }
+    },
+    {
+      "index": 352,
+      "name": "OUT3 Zähler",
+      "description": "Ausgang 3, Schaltzähler",
+      "access": "ro",
+      "datatype": "IntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "OUT3 Zähler",
+        "length": 4,
+        "fields": [
+          {
+            "key": "value",
+            "name": "OUT3 Zähler",
+            "type": "int",
+            "offset": 0,
+            "length": 4,
+            "shift": 0,
+            "bits": 32,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 0,
+            "max": 2000000000
+          }
+        ]
+      }
+    },
+    {
+      "index": 500,
+      "name": "P-n",
+      "description": "Ausgangspolarität der Schaltausgänge",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "P-n",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "P-n",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 510,
+      "name": "dAP",
+      "description": "Dämpfung des Messsignals",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "dAP",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "dAP",
+            "type": "uint",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "unit": "s",
+            "device_class": "",
+            "state_class": "measurement",
+            "invalid_values": [],
+            "min": 0,
+            "max": 3600
+          }
+        ]
+      }
+    },
+    {
+      "index": 530,
+      "name": "dFo",
+      "description": "Verzögerungszeit der Ausgänge im Fehlerfall",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "1",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "dFo",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "dFo",
+            "type": "uint",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "unit": "s",
+            "device_class": "",
+            "state_class": "measurement",
+            "invalid_values": [],
+            "min": 0,
+            "max": 43200
+          }
+        ]
+      }
+    },
+    {
+      "index": 531,
+      "name": "FOU1",
+      "description": "Verhalten von [OUT 1] im Fehlerfall",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "1",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "FOU1",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "FOU1",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              1,
+              2,
+              4
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 532,
+      "name": "FOU2",
+      "description": "Verhalten von [OUT 2] im Fehlerfall",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "1",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "FOU2",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "FOU2",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              1,
+              2,
+              4
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 533,
+      "name": "FOU3",
+      "description": "Verhalten von [OUT 3] im Fehlerfall",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "1",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "FOU3",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "FOU3",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              1,
+              2,
+              4
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 541,
+      "name": "Einschaltvorgänge",
+      "description": "Anzahl der Einschaltvorgänge seit Auslieferung",
+      "access": "ro",
+      "datatype": "IntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "Einschaltvorgänge",
+        "length": 4,
+        "fields": [
+          {
+            "key": "value",
+            "name": "Einschaltvorgänge",
+            "type": "int",
+            "offset": 0,
+            "length": 4,
+            "shift": 0,
+            "bits": 32,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 0,
+            "max": 1000000
+          }
+        ]
+      }
+    },
+    {
+      "index": 542,
+      "name": "Betriebsstunden",
+      "description": "Betriebsstundenzähler seit Auslieferung",
+      "access": "ro",
+      "datatype": "IntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "Betriebsstunden",
+        "length": 4,
+        "fields": [
+          {
+            "key": "value",
+            "name": "Betriebsstunden",
+            "type": "int",
+            "offset": 0,
+            "length": 4,
+            "shift": 0,
+            "bits": 32,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 0,
+            "max": 500000
+          }
+        ]
+      }
+    },
+    {
+      "index": 543,
+      "name": "Interne Temperatur",
+      "description": "Aktuelle interne Temperatur",
+      "access": "ro",
+      "datatype": "IntegerT",
+      "default": "",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "Interne Temperatur",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "Interne Temperatur",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "unit": "°C",
+            "device_class": "temperature",
+            "state_class": "measurement",
+            "invalid_values": [
+              32764
+            ],
+            "min": -100,
+            "max": 300
+          }
+        ]
+      }
+    },
+    {
+      "index": 544,
+      "name": "Internal_Temperature_HiLo",
+      "description": "Interner Temperaturspeicher",
+      "access": "ro",
+      "datatype": "RecordT",
+      "default": ""
+    },
+    {
+      "index": 545,
+      "name": "Aktive Events",
+      "description": "Bitmaske für aktuell anstehende Events",
+      "access": "ro",
+      "datatype": "RecordT",
+      "default": ""
+    },
+    {
+      "index": 546,
+      "name": "Parameter Einstellungsfehler",
+      "description": "Zeigt den zum Downloadzeitpunkt fehlerhaft eingestellten Parameter an",
+      "access": "ro",
+      "datatype": "ArrayT",
+      "default": "0"
+    },
+    {
+      "index": 560,
+      "name": "Hi",
+      "description": "Maximalwertspeicher",
+      "access": "ro",
+      "datatype": "IntegerT",
+      "default": "",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "Hi",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "Hi",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [
+              32764
+            ],
+            "min": 0,
+            "max": 100
+          }
+        ]
+      }
+    },
+    {
+      "index": 561,
+      "name": "Lo",
+      "description": "Minimalwertspeicher",
+      "access": "ro",
+      "datatype": "IntegerT",
+      "default": "",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "Lo",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "Lo",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [
+              32764
+            ],
+            "min": 0,
+            "max": 100
+          }
+        ]
+      }
+    },
+    {
+      "index": 580,
+      "name": "ou1",
+      "description": "Ausgangkonfiguration [OUT 1]",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "3",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "ou1",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "ou1",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              3,
+              4,
+              5,
+              6,
+              12,
+              16
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 581,
+      "name": "dS1",
+      "description": "Schaltverzögerung für [OUT 1]",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "dS1",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "dS1",
+            "type": "uint",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "unit": "s",
+            "device_class": "",
+            "state_class": "measurement",
+            "invalid_values": [],
+            "min": 0,
+            "max": 43200
+          }
+        ]
+      }
+    },
+    {
+      "index": 582,
+      "name": "dr1",
+      "description": "Rückschaltverzögerung für [OUT 1]",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "dr1",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "dr1",
+            "type": "uint",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "unit": "s",
+            "device_class": "",
+            "state_class": "measurement",
+            "invalid_values": [],
+            "min": 0,
+            "max": 43200
+          }
+        ]
+      }
+    },
+    {
+      "index": 583,
+      "name": "SP1 (FH1)",
+      "description": "Schaltpunkt 1, SP1 muss größer als rP1 sein. Mindestabstand SP1...rP1 = 1 %. Weitere Informationen, siehe Bedienungsanleitung",
+      "access": "rw",
+      "datatype": "IntegerT",
+      "default": "25",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "SP1 (FH1)",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "SP1 (FH1)",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 5,
+            "max": 95
+          }
+        ]
+      }
+    },
+    {
+      "index": 584,
+      "name": "rP1 (FL1)",
+      "description": "Rückschaltpunkt 1. rP1 muss kleiner als SP1 sein. Mindestabstand SP1...rP1 ===> siehe SP1",
+      "access": "rw",
+      "datatype": "IntegerT",
+      "default": "20",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "rP1 (FL1)",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "rP1 (FL1)",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 4,
+            "max": 94
+          }
+        ]
+      }
+    },
+    {
+      "index": 590,
+      "name": "ou2",
+      "description": "Ausgangkonfiguration [OUT 2]",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "16",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "ou2",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "ou2",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              3,
+              4,
+              5,
+              6,
+              12,
+              16
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 591,
+      "name": "dS2",
+      "description": "Schaltverzögerung für [OUT 2]",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "dS2",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "dS2",
+            "type": "uint",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "unit": "s",
+            "device_class": "",
+            "state_class": "measurement",
+            "invalid_values": [],
+            "min": 0,
+            "max": 43200
+          }
+        ]
+      }
+    },
+    {
+      "index": 592,
+      "name": "dr2",
+      "description": "Rückschaltverzögerung für [OUT 2]",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "dr2",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "dr2",
+            "type": "uint",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "unit": "s",
+            "device_class": "",
+            "state_class": "measurement",
+            "invalid_values": [],
+            "min": 0,
+            "max": 43200
+          }
+        ]
+      }
+    },
+    {
+      "index": 593,
+      "name": "SP2 (FH2)",
+      "description": "Schaltpunkt 2, SP2 muss größer als rP2 sein. Mindestabstand SP2...rP2 = 1 %. Weitere Informationen, siehe Bedienungsanleitung",
+      "access": "rw",
+      "datatype": "IntegerT",
+      "default": "50",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "SP2 (FH2)",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "SP2 (FH2)",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 5,
+            "max": 95
+          }
+        ]
+      }
+    },
+    {
+      "index": 594,
+      "name": "rP2 (FL2)",
+      "description": "Rückschaltpunkt 2. rP2 muss kleiner als SP2 sein. Mindestabstand SP2...rP2 ===> siehe SP2",
+      "access": "rw",
+      "datatype": "IntegerT",
+      "default": "45",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "rP2 (FL2)",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "rP2 (FL2)",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 4,
+            "max": 94
+          }
+        ]
+      }
+    },
+    {
+      "index": 600,
+      "name": "ou3",
+      "description": "Ausgangkonfiguration [OUT 3]",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "16",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "ou3",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "ou3",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              3,
+              4,
+              5,
+              6,
+              12,
+              16
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 601,
+      "name": "dS3",
+      "description": "Schaltverzögerung für [OUT 3]",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "dS3",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "dS3",
+            "type": "uint",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "unit": "s",
+            "device_class": "",
+            "state_class": "measurement",
+            "invalid_values": [],
+            "min": 0,
+            "max": 43200
+          }
+        ]
+      }
+    },
+    {
+      "index": 602,
+      "name": "dr3",
+      "description": "Rückschaltverzögerung für [OUT 3]",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "dr3",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "dr3",
+            "type": "uint",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "unit": "s",
+            "device_class": "",
+            "state_class": "measurement",
+            "invalid_values": [],
+            "min": 0,
+            "max": 43200
+          }
+        ]
+      }
+    },
+    {
+      "index": 603,
+      "name": "SP3 (FH3)",
+      "description": "Schaltpunkt 3, SP3 muss größer als rP3 sein. Mindestabstand SP3...rP3 = 1 %. Weitere Informationen, siehe Bedienungsanleitung",
+      "access": "rw",
+      "datatype": "IntegerT",
+      "default": "75",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "SP3 (FH3)",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "SP3 (FH3)",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 5,
+            "max": 95
+          }
+        ]
+      }
+    },
+    {
+      "index": 604,
+      "name": "rP3 (FL3)",
+      "description": "Rückschaltpunkt 3. rP3 muss kleiner als SP3 sein. Mindestabstand SP3...rP3 ===> siehe SP3",
+      "access": "rw",
+      "datatype": "IntegerT",
+      "default": "70",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "rP3 (FL3)",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "rP3 (FL3)",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 4,
+            "max": 94
+          }
+        ]
+      }
+    },
+    {
+      "index": 924,
+      "name": "Empfindlichkeit",
+      "description": "Empfindlichkeit des Sensors",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "2",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "Empfindlichkeit",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "Empfindlichkeit",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              0,
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 1400,
+      "name": "LED Modus",
+      "description": "LED Modus",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "3",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "LED Modus",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "LED Modus",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              0,
+              1,
+              2,
+              3
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 1500,
+      "name": "Ausrichtung",
+      "description": "Montageausrichtung des Sensors",
+      "access": "rw",
+      "datatype": "UIntegerT",
+      "default": "0",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "Ausrichtung",
+        "length": 1,
+        "fields": [
+          {
+            "key": "value",
+            "name": "Ausrichtung",
+            "type": "uint",
+            "offset": 0,
+            "length": 1,
+            "shift": 0,
+            "bits": 8,
+            "precision": 0,
+            "values": [
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 1501,
+      "name": "Begrenzung der Sensorelemente",
+      "description": "Deaktivierte Sensorelemente unten/oben",
+      "access": "rw",
+      "datatype": "RecordT",
+      "default": ""
+    },
+    {
+      "index": 1502,
+      "name": "Minimale Erkennungsschwelle",
+      "description": "Minimale Erkennungsschwelle ab welcher Signale als gültig erkannt werden",
+      "access": "rw",
+      "datatype": "IntegerT",
+      "default": "128",
+      "decoder": {
+        "id": "parameter_value",
+        "name": "Minimale Erkennungsschwelle",
+        "length": 2,
+        "fields": [
+          {
+            "key": "value",
+            "name": "Minimale Erkennungsschwelle",
+            "type": "int",
+            "offset": 0,
+            "length": 2,
+            "shift": 0,
+            "bits": 16,
+            "precision": 0,
+            "scale": 1,
+            "add": 0,
+            "invalid_values": [],
+            "min": 64,
+            "max": 3200
+          }
+        ]
+      }
+    },
+    {
+      "index": 1503,
+      "name": "Füllstands Diagnosedaten",
+      "description": "Diagnosedaten: Index der Füllstandskante, Signalstärke in Bezug zum Dynamikbereich, Kantenschärfe und Qualität des Einbaus.",
+      "access": "ro",
+      "datatype": "RecordT",
+      "default": ""
+    },
+    {
+      "index": 16512,
+      "name": "MDC Descr",
+      "description": "Beschreibung des Messdatenkanals",
+      "access": "ro",
+      "datatype": "RecordT",
+      "default": ""
+    }
+  ],
+  "conditions": []
+}

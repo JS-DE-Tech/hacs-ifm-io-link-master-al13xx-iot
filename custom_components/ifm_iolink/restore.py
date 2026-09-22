@@ -194,5 +194,5 @@ async def execute_restore(coordinator, port, plan, record, still_current=lambda:
         report["error"] = str(err)
     await record(deepcopy(report))
     coordinator.condition_values.clear()
-    coordinator.metadata_at = 0
+    coordinator.metadata_at = None
     return report

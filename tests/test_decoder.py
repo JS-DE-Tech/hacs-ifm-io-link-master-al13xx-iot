@@ -5,7 +5,15 @@ from pathlib import Path
 
 import pytest
 
-from custom_components.ifm_iolink.decoder import decode, validate_profile
+from custom_components.ifm_iolink.decoder import (
+    decode,
+    encode_command,
+    encode_parameter,
+    numeric_range,
+    parameter_entity_kind,
+    select_values,
+    validate_profile,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -14,9 +22,11 @@ def profile(name):
     return json.loads((ROOT / "custom_components/ifm_iolink/profiles" / (name + ".json")).read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize("name", ["pn7094", "pn7096", "pn7094_default", "pn7096_default", "badu_flowsonic_plus"])
-def test_shipped_profiles_validate(name):
-    validate_profile(profile(name))
+@pytest.mark.parametrize(
+    "path", sorted((ROOT / "custom_components/ifm_iolink/profiles").glob("*.json")), ids=lambda p: p.stem
+)
+def test_shipped_profiles_validate(path):
+    validate_profile(json.loads(path.read_text(encoding="utf-8")))
 
 
 def test_live_pn7096_samples_and_switches():
@@ -121,5 +131,185 @@ def test_reject_invalid_field_definitions(changes):
 def test_reject_unsafe_images(image):
     p = profile("pn7096")
     p["image"] = image
+    with pytest.raises(ValueError):
+        validate_profile(p)
+
+
+def parameter(name, index):
+    return next(p for p in profile(name)["parameters"] if p["index"] == index)
+
+
+def test_parameter_entity_kind_writable_full_byte_int_is_number():
+    p = parameter("pn7096_default", 500)  # rw UIntegerT, 1 full byte
+    assert parameter_entity_kind(p) == "number"
+    p = parameter("pn7096_default", 583)  # rw IntegerT, 2 full bytes, scaled
+    assert parameter_entity_kind(p) == "number"
+
+
+def test_parameter_entity_kind_read_only_is_sensor():
+    assert parameter_entity_kind(parameter("pn7096_default", 560)) == "sensor"  # ro
+
+
+def test_parameter_entity_kind_without_trivial_decoder_is_sensor():
+    assert parameter_entity_kind(parameter("pn7096_default", 552)) == "sensor"  # RecordT, no decoder
+    p = copy.deepcopy(parameter("pn7096_default", 500))
+    p["decoder"]["fields"][0]["shift"] = 1  # partial-byte field
+    p["decoder"]["fields"][0]["bits"] = 7
+    assert parameter_entity_kind(p) == "sensor"
+
+
+def test_encode_parameter_round_trips_and_matches_numeric_range():
+    p = parameter("pn7096_default", 583)  # scale 0.01, signed 16 bit
+    lo, hi = numeric_range(p["decoder"]["fields"][0])
+    assert (lo, hi) == (-327.68, 327.67)
+    raw = encode_parameter(p, 1.23)
+    assert decode(p["decoder"], raw)["value"] == 1.23
+
+
+def test_encode_parameter_rejects_out_of_range_and_non_writable():
+    p = parameter("pn7096_default", 500)  # 0..255
+    with pytest.raises(ValueError):
+        encode_parameter(p, 256)
+    with pytest.raises(ValueError):
+        encode_parameter(parameter("pn7096_default", 560), 1)  # read-only
+
+
+def test_min_max_narrows_the_writable_range_below_the_bit_width():
+    p = copy.deepcopy(parameter("pn7096_default", 500))  # rw uint8, otherwise 0..255
+    p["decoder"]["fields"][0].update(min=10, max=20)
+    assert numeric_range(p["decoder"]["fields"][0]) == (10, 20)
+    assert encode_parameter(p, 20) == "14"
+    with pytest.raises(ValueError):
+        encode_parameter(p, 21)
+    with pytest.raises(ValueError):
+        encode_parameter(p, 9)
+
+
+def test_values_enum_is_a_select_not_a_number():
+    # PG1406 index 802 (display brightness) is a uint8 but the device only accepts the fixed
+    # steps 0/25/50/75/100, not a continuous range; writing e.g. 51 fails on real hardware with
+    # ifm error code 531 even though it is well within the bit width.
+    p = parameter("ifm_pg1406", 802)
+    field = p["decoder"]["fields"][0]
+    assert parameter_entity_kind(p) == "select"
+    assert field["values"] == [0, 25, 50, 75, 100]
+    assert select_values(field) == [0, 25, 50, 75, 100]
+    assert encode_parameter(p, 75) == "4B"
+    with pytest.raises(ValueError):
+        encode_parameter(p, 51)
+
+
+def test_values_are_scaled_like_a_number_field():
+    p = copy.deepcopy(parameter("pn7096_default", 583))  # scale 0.01, signed 16 bit
+    p["decoder"]["fields"][0]["values"] = [0, 50, 100]
+    field = p["decoder"]["fields"][0]
+    assert select_values(field) == [0, 0.5, 1.0]
+    assert encode_parameter(p, 0.5) == "0032"
+    with pytest.raises(ValueError):
+        encode_parameter(p, 0.75)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"min": 0, "max": 300},  # above the uint8 bit width
+        {"min": 50, "max": 10},  # min > max
+        {"min": 1.5, "max": 10},  # not an integer
+        {"max": 100, "type": "bool"},  # min/max only allowed for uint/int
+    ],
+)
+def test_reject_invalid_min_max_definitions(changes):
+    p = copy.deepcopy(parameter("pn7096_default", 500))  # plain rw uint8, no min/max/values
+    p["decoder"]["fields"][0].update(changes)
+    with pytest.raises(ValueError):
+        validate_profile(p["decoder"])
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        [0, 25, 50, 75, 300],  # above the uint8 bit width
+        [0, 25, 25, 75],  # duplicate
+        [0, 25.5, 75],  # not an integer
+        [],  # empty
+    ],
+)
+def test_reject_invalid_values_definitions(values):
+    p = copy.deepcopy(parameter("pn7096_default", 500))  # plain rw uint8, no min/max/values
+    p["decoder"]["fields"][0]["values"] = values
+    with pytest.raises(ValueError):
+        validate_profile(p["decoder"])
+
+
+def test_reject_values_on_non_integer_type():
+    p = copy.deepcopy(parameter("pn7096_default", 500))
+    p["decoder"]["fields"][0]["type"] = "bool"
+    p["decoder"]["fields"][0]["values"] = [0, 1]
+    with pytest.raises(ValueError):
+        validate_profile(p["decoder"])
+
+
+def test_commands_are_optional_and_default_to_empty():
+    p = copy.deepcopy(profile("pn7096"))
+    assert "commands" not in p
+    validate_profile(p)  # no commands key at all is fine
+
+
+def test_valid_command_round_trips():
+    p = copy.deepcopy(profile("pn7096"))
+    p["commands"] = [{"index": 2, "value": 1, "name": "Kalibrierung starten", "description": "Nullpunkt"}]
+    validate_profile(p)
+    assert encode_command(p["commands"][0]) == "01"
+    assert encode_command({"value": 255}) == "FF"
+    assert encode_command({"value": 0}) == "00"
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"index": -1},
+        {"index": 65536},
+        {"index": 1.5},
+        {"value": -1},
+        {"value": 256},
+        {"value": 1.5},
+        {"name": "x" * 4001},
+        {"description": "x" * 4001},
+        {"unexpected": "field"},
+    ],
+)
+def test_reject_invalid_command_definitions(changes):
+    p = copy.deepcopy(profile("pn7096"))
+    command = {"index": 2, "value": 1, "name": "Kalibrierung starten", "description": "Nullpunkt"}
+    command.update(changes)
+    p["commands"] = [command]
+    with pytest.raises(ValueError):
+        validate_profile(p)
+
+
+def test_allow_multiple_commands_sharing_one_index_with_different_values():
+    # A single "system command" index commonly carries several named commands,
+    # distinguished only by the value written to it (e.g. calibrate empty/full tank).
+    p = copy.deepcopy(profile("pn7096"))
+    p["commands"] = [
+        {"index": 2, "value": 208, "name": "Leeren Tank abgleichen", "description": ""},
+        {"index": 2, "value": 209, "name": "Vollen Tank abgleichen", "description": ""},
+    ]
+    validate_profile(p)
+
+
+def test_reject_duplicate_command_index_and_value():
+    p = copy.deepcopy(profile("pn7096"))
+    p["commands"] = [
+        {"index": 2, "value": 1, "name": "A", "description": ""},
+        {"index": 2, "value": 1, "name": "B", "description": ""},
+    ]
+    with pytest.raises(ValueError):
+        validate_profile(p)
+
+
+def test_reject_too_many_commands():
+    p = copy.deepcopy(profile("pn7096"))
+    p["commands"] = [{"index": i, "value": 1, "name": str(i), "description": ""} for i in range(65)]
     with pytest.raises(ValueError):
         validate_profile(p)

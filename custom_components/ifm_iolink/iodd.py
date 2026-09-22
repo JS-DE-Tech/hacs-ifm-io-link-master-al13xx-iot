@@ -114,7 +114,7 @@ def import_iodd(raw: bytes, filename: str = "device.zip") -> list[dict]:
                     return {}
             return available[0] if available else {}
 
-        def field_from(node, dtype, total_bits, offset, key, display, warnings):
+        def field_from(node, dtype, total_bits, offset, key, display, warnings, is_parameter=False):
             kind = dtype.get(XSI, "").split(":")[-1] if dtype is not None else ""
             if kind not in TYPES:
                 warnings.append(f"{label(node) or key}: Datentyp {kind or 'unbekannt'} nicht unterstützt")
@@ -158,6 +158,18 @@ def import_iodd(raw: bytes, filename: str = "device.zip") -> list[dict]:
                     for v in exceptions
                     if not any(float(r.get("lowerValue")) <= v <= float(r.get("upperValue")) for r in ranges)
                 ]
+                if is_parameter and kind in ("UIntegerT", "IntegerT"):
+                    # Raw-domain bounds, e.g. a device only accepting 0-100 of a wider uint field.
+                    # Parameter fields are always the full, unshifted type width, unlike packed PDIN sub-fields,
+                    # so the IODD's range always fits the field's own bit width here.
+                    field["min"] = int(round(min(float(r.get("lowerValue")) for r in ranges)))
+                    field["max"] = int(round(max(float(r.get("upperValue")) for r in ranges)))
+            else:
+                singles = dtype.findall("i:SingleValue", NS)
+                if is_parameter and singles and kind in ("UIntegerT", "IntegerT"):
+                    # No ValueRange at all: the SingleValues are the complete, fixed set of accepted
+                    # values (e.g. a 0/25/50/75/100 percentage enum), not exceptions within a range.
+                    field["values"] = sorted({int(round(float(n.get("value")))) for n in singles})
             return field
 
         parameters = []
@@ -177,7 +189,7 @@ def import_iodd(raw: bytes, filename: str = "device.zip") -> list[dict]:
             if dtype is not None and param["datatype"] in TYPES:
                 bits = int(dtype.get("bitLength", "1" if param["datatype"] == "BooleanT" else "32"))
                 total = math.ceil(bits / 8) * 8
-                field = field_from(variable, dtype, total, 0, "value", display, [])
+                field = field_from(variable, dtype, total, 0, "value", display, [], is_parameter=True)
                 if field:
                     param["decoder"] = {
                         "id": "parameter_value",

@@ -71,6 +71,22 @@ class IfmClient:
             empty_response=True,
         )
 
+    async def write_port_mode(self, port, mode):
+        if type(port) is not int or not 1 <= port <= 8 or type(mode) is not int or mode not in (0, 1, 2, 3):
+            raise ValueError("Ungültiger Port/Portmodus")
+        return await self._request(
+            f"/iolinkmaster/port[{port}]/mode/setdata", {"newvalue": mode}, empty_response=True
+        )
+
+    async def write_port_output(self, port, on):
+        if type(port) is not int or not 1 <= port <= 8 or type(on) is not bool:
+            raise ValueError("Ungültiger Port/Ausgangswert")
+        return await self._request(
+            f"/iolinkmaster/port[{port}]/iolinkdevice/pdout/setdata",
+            {"newvalue": "01" if on else "00"},
+            empty_response=True,
+        )
+
     async def _request(self, adr, data=None, empty_response=False):
         body = {"code": "request", "cid": 1, "adr": adr}
         if data is not None:
