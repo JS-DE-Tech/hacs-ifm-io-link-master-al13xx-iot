@@ -16,3 +16,4 @@ jobs:
         with:
           node-version: '22'
       - run: node --check custom_components/ifm_iolink/frontend/panel.js
+      - run: node tests/test_panel_digital.cjs

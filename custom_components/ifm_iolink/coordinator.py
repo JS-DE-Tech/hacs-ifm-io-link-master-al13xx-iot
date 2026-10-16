@@ -11,6 +11,7 @@ from homeassistant.util import dt as dt_util
 from .api import IfmError, data_value
 from .const import DEFAULT_INTERVAL, DOMAIN, PORT_PROPERTIES, port_path
 from .decoder import decode
+from .digital import digital_value, pin2_value, port_mode
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,15 +27,17 @@ class IfmCoordinator(DataUpdateCoordinator):
         )
         self.entry, self.client, self.identity, self.library = entry, client, identity, library
         self.metadata = {}
-        self.metadata_at = 0
+        self.metadata_at = None
         self.condition_values = {}
         self.samples = {str(port): deque(maxlen=30) for port in range(1, identity["ports"] + 1)}
 
     async def _async_update_data(self):
-        refresh_metadata = time.monotonic() - self.metadata_at >= 60
+        refresh_metadata = self.metadata_at is None or time.monotonic() - self.metadata_at >= 60
         paths = []
         for port in range(1, self.identity["ports"] + 1):
             paths.extend(port_path(port, name) for name in ("pdin", "status"))
+            paths.extend((f"/iolinkmaster/port[{port}]/mode", f"/iolinkmaster/port[{port}]/pin2in"))
+            paths.append(port_path(port, "pdout"))
             if refresh_metadata:
                 paths.extend(port_path(port, name) for name in PORT_PROPERTIES if name != "status")
         try:
@@ -53,11 +56,12 @@ class IfmCoordinator(DataUpdateCoordinator):
             status = data_value(response, port_path(port, "status"))
             identity["status"] = status
             raw = data_value(response, port_path(port, "pdin"))
+            mode = port_mode(data_value(response, f"/iolinkmaster/port[{port}]/mode"))
             assignment = self.entry.options.get("ports", {}).get(key, {})
             profile_id = assignment.get("profile", "unknown")
             profile = self.library.all.get(profile_id)
             values, error = {}, None
-            connected = status == 2 and isinstance(raw, str) and bool(raw)
+            connected = status == 2 and isinstance(raw, str) and bool(raw) and mode in (None, 3)
             if profile and connected:
                 try:
                     matches = profile.get("match", [])
@@ -88,6 +92,11 @@ class IfmCoordinator(DataUpdateCoordinator):
                 "port": port,
                 "identity": dict(identity),
                 "raw": raw,
+                "mode": mode,
+                "pin2": pin2_value(data_value(response, f"/iolinkmaster/port[{port}]/pin2in")),
+                "pin4": digital_value(raw) if mode == 1 else (
+                    digital_value(data_value(response, port_path(port, "pdout"))) if mode == 2 else None
+                ),
                 "connected": connected,
                 "profile": profile_id,
                 "assignment": assignment,

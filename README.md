@@ -45,7 +45,9 @@ Im grafischen Command Center steht der Master in der Mitte. Seine Ports führen 
 | **Sichern und wiederherstellen** | Parametersicherung am Port, JSON-Export/-Import, geprüfte Vorschau und Protokoll des Wiederherstellungsversuchs. |
 | **Home-Assistant-Entitäten** | Sensoren und binäre Sensoren für Messwerte und Zustände; damit eigene Diagramme, Meldungen und Automationen erstellen. |
 
-Die laufende Messwerterfassung liest die Geräte. **Schreibzugriffe erfolgen bei einer ausdrücklich bestätigten Parameterwiederherstellung.** Master-Netzwerkeinstellungen und IO-Link-Portbetriebsart werden durch diese Integration nicht eingerichtet.
+Die laufende Messwerterfassung liest die Geräte. **Schreibzugriffe erfolgen bei einer ausdrücklich bestätigten Parameterwiederherstellung sowie beim Schalten eines Digitalausgangs und nach Bestätigung einer Portmodusänderung.** Master-Netzwerkeinstellungen werden nicht verändert. Der lokale Entwicklungsstand unterstützt die Auswahl von DO, IO-Link, DI und Disabled sowie DO-Rückmeldung und DI-Binärsensoren; siehe [Digital-I/O](docs/digital-io.md).
+
+Im noch unveröffentlichten Entwicklungsstand lassen sich bereits als DO konfigurierte Ports über HA-Schalter und EIN/AUS-Tasten im Command Center bedienen. Zwei Anzeigen je Kanal zeigen Pin 2 und Pin 4/IO-Link; fehlende Daten bleiben unbekannt. [Funktionsumfang und Prüfgrenzen](docs/digital-io.md).
 
 ## Ein Blick ins Command Center
 

@@ -12,6 +12,7 @@ from types import ModuleType, SimpleNamespace
 
 import pytest
 import voluptuous as vol
+from test_digital import fixture as digital_fixture
 
 
 @pytest.fixture
@@ -86,10 +87,42 @@ def test_existing_masters_load_in_panel(ws, include_profiles):
         assert "profiles" not in results[0][1]
 
 
+@pytest.mark.parametrize("mode,success", [(2, True), (3, False)])
+def test_panel_output_uses_guarded_write(ws, mode, success):
+    hass, coordinator, state, writes, _ = digital_fixture()
+    state["mode"] = mode
+    hass.tasks = []
+    results, errors = [], []
+    connection = SimpleNamespace(
+        user=SimpleNamespace(is_admin=True),
+        send_result=lambda *args: results.append(args),
+        send_error=lambda *args: errors.append(args),
+    )
+
+    async def refresh():
+        pass
+
+    coordinator.async_request_refresh = refresh
+
+    async def run():
+        message = ws.set_digital_output.schema(
+            {"id": 1, "type": "ifm_iolink/set_digital_output", "entry_id": "entry", "port": 1, "on": True}
+        )
+        ws.set_digital_output(hass, connection, message)
+        await asyncio.gather(*hass.tasks)
+
+    asyncio.run(run())
+    assert bool(results) is success
+    assert bool(errors) is not success
+    assert writes == ([(1, True)] if success else [])
+
+
 @pytest.mark.parametrize(
     "name",
     [
         "snapshot",
+        "set_digital_output",
+        "set_port_mode",
         "assign",
         "save_profile",
         "delete_profile",
@@ -202,3 +235,45 @@ def test_restore_confirmation_bound_to_preview(ws, monkeypatch, issue):
     assert len(executed) == (1 if issue in ("valid", "replay") else 0)
     assert bool(errors) == (issue != "valid")
     assert not backups.busy
+
+
+@pytest.mark.parametrize("confirm", [True, False])
+def test_mode_command_requires_confirmation(ws, confirm):
+    hass, c, state, writes, _ = digital_fixture()
+    hass.tasks = []
+    results, errors = [], []
+    connection = SimpleNamespace(
+        user=SimpleNamespace(is_admin=True),
+        send_result=lambda *a: results.append(a),
+        send_error=lambda *a: errors.append(a),
+    )
+
+    async def write_mode(port, mode):
+        writes.append((port, mode))
+        state["mode"] = mode
+
+    async def refresh():
+        pass
+
+    c.client.write_port_mode = write_mode
+    c.async_request_refresh = refresh
+
+    async def run():
+        msg = ws.set_port_mode.schema(
+            {
+                "id": 1,
+                "type": "ifm_iolink/set_port_mode",
+                "entry_id": "entry",
+                "port": 1,
+                "expected_mode": 2,
+                "target_mode": 1,
+                "confirm": confirm,
+            }
+        )
+        ws.set_port_mode(hass, connection, msg)
+        await asyncio.gather(*hass.tasks)
+
+    asyncio.run(run())
+    assert bool(results) == confirm
+    assert bool(errors) != confirm
+    assert writes == ([(1, 1)] if confirm else [])

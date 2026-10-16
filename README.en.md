@@ -45,7 +45,9 @@ The graphical Command Center places the master at the centre, with connections t
 | **Backup and restore** | Store parameter backups per port, export/import JSON, review a restore preview and download the restore report. |
 | **Home Assistant entities** | Sensors and binary sensors for measurements and status, ready for your own charts, notifications and automations. |
 
-Routine measurement polling reads the devices. **Write operations take place during an explicitly confirmed parameter restore.** The integration does not configure master network settings or IO-Link port operating modes.
+Routine measurement polling reads the devices. **Write operations take place during an explicitly confirmed parameter restore when switching a digital output, and after confirming a port mode change.** Master network settings remain unchanged. The local development version supports DO, IO-Link, DI and Disabled, read-back DO state and DI binary sensors; see [Digital I/O (German)](docs/digital-io.md).
+
+The unreleased development version supports HA switches and Command Center ON/OFF buttons for ports already configured as DO. Two indicators per channel show pin 2 and pin 4/IO-Link states; missing data remains unknown. [Scope and verification limits (German)](docs/digital-io.md).
 
 ## A look inside the Command Center
 

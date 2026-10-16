@@ -83,6 +83,46 @@ def instance(module, condition_value=0):
     return c, client
 
 
+def test_metadata_refreshes_after_boot_and_invalidation(coordinator_module, monkeypatch):
+    """Adapted from 100prznt/dff25a6; cover restore invalidation as well."""
+    monkeypatch.setattr(coordinator_module.time, "monotonic", lambda: 5.0)
+    c, client = instance(coordinator_module)
+    result = asyncio.run(c._async_update_data())
+    assert result["1"]["identity"]["vendorid"] == 310
+    assert result["1"]["values"]["pd_1"] == 0.22
+    client.device = 601
+    c.metadata_at = None
+    result = asyncio.run(c._async_update_data())
+    assert result["1"]["identity"]["deviceid"] == 601
+    assert result["1"]["error"]
+
+
+@pytest.mark.parametrize("mode,raw,expected", [(1, "00", False), (1, None, None), (2, "01", True), (2, "02", None)])
+def test_digital_polling_preserves_unknown_and_rechecks_mode(coordinator_module, mode, raw, expected):
+    c, client = instance(coordinator_module)
+    original = client.multi
+    live = {"mode": mode}
+
+    async def multi(paths):
+        result = await original(paths)
+        result["/iolinkmaster/port[1]/mode"] = {"code": 200, "data": live["mode"]}
+        result["/iolinkmaster/port[1]/pin2in"] = {"code": 200, "data": 1}
+        result[port_path(1, "pdout" if mode == 2 else "pdin")] = {"code": 200, "data": raw}
+        result["/iolinkmaster/port[2]/pin2in"] = {"code": 500, "data": 0}
+        return result
+
+    client.multi = multi
+    result = asyncio.run(c._async_update_data())
+    assert result["1"]["pin4"] is expected
+    assert result["1"]["pin2"] is True
+    assert result["2"]["pin2"] is None
+    assert result["1"]["values"] == {}
+    live["mode"] = 0
+    result = asyncio.run(c._async_update_data())
+    assert result["1"]["mode"] == 0
+    assert result["1"]["pin4"] is None
+
+
 def test_one_bad_port_does_not_remove_other_measurement(coordinator_module):
     c, _ = instance(coordinator_module)
     result = asyncio.run(c._async_update_data())

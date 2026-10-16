@@ -147,3 +147,44 @@ def test_failed_parameter_write_is_not_retried():
 
     asyncio.run(serve(handler, check))
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize("on,raw", [(True, "01"), (False, "00")])
+def test_digital_output_writes_one_byte(on, raw):
+    calls = []
+
+    async def handler(request):
+        calls.append(await request.json())
+        return web.json_response({"code": 200})
+
+    async def check(client):
+        await client.write_port_output(2, on)
+        with pytest.raises(ValueError):
+            await client.write_port_output(2, 1)
+        with pytest.raises(ValueError):
+            await client.write_port_output(True, True)
+
+    asyncio.run(serve(handler, check))
+    assert len(calls) == 1
+    assert calls[0]["adr"] == "/iolinkmaster/port[2]/iolinkdevice/pdout/setdata"
+    assert calls[0]["data"] == {"newvalue": raw}
+
+
+@pytest.mark.parametrize("mode", [0, 1, 2, 3])
+def test_mode_api_payload(mode):
+    calls = []
+
+    async def handler(request):
+        calls.append(await request.json())
+        return web.json_response({"code": 200})
+
+    async def check(client):
+        await client.write_port_mode(8, mode)
+        for port, value in [(True, mode), (9, mode), (1, True), (1, 4)]:
+            with pytest.raises(ValueError):
+                await client.write_port_mode(port, value)
+
+    asyncio.run(serve(handler, check))
+    assert len(calls) == 1
+    assert calls[0]["adr"] == "/iolinkmaster/port[8]/mode/setdata"
+    assert calls[0]["data"] == {"newvalue": mode}

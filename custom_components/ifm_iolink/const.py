@@ -2,7 +2,7 @@
 
 DOMAIN = "ifm_iolink"
 MODELS = {"AL1350": 4, "AL1352": 8}
-PLATFORMS = ["sensor", "binary_sensor"]
+PLATFORMS = ["sensor", "binary_sensor", "switch"]
 STATIC_URL = "/ifm_iolink_static"
 DEFAULT_INTERVAL = 2
 PORT_PROPERTIES = ("productname", "vendorid", "deviceid", "serial", "status", "applicationspecifictag")

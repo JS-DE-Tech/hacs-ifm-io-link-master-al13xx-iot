@@ -4,6 +4,7 @@ Die Quellen wurden vom Nutzer für dieses Projekt bereitgestellt. Herstellerbild
 
 | Verwendung | Quelle |
 |---|---|
+| SV4200-Profilbild und Ausgangsprofil | 100prznt-Fork, Commit `54ae972`; Prozessdatenkorrektur nach ifm-0001E4-20231005-IODD1.1; siehe `review-100prznt.md` |
 | AL1350/AL1352-Abbildung | vom Nutzer bereitgestellte PNG-Bilder |
 | PN7094/PN7096 Status B, Originalbilder und Parameter | ifm IODD `000259` / `00025A`, Stand 2019-03-07 |
 | PN7094 Default | ifm IODD `000193`, Stand 2017-11-22 |

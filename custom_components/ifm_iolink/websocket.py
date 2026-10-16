@@ -14,14 +14,19 @@ from homeassistant.components import websocket_api
 from .api import IfmError
 from .const import DOMAIN
 from .decoder import decode, validate_profile
+from .digital import set_output
 from .iodd import import_iodd
 from .parameters import collect_parameters, read_parameter_value
+from .port_mode import change_mode
 from .restore import execute_restore, prepare_restore
+from .version import installed_version
 
 
 def register_commands(hass):
     for command in (
         snapshot,
+        set_digital_output,
+        set_port_mode,
         assign,
         save_profile,
         delete_profile,
@@ -38,6 +43,44 @@ def register_commands(hass):
         get_restore_report,
     ):
         websocket_api.async_register_command(hass, command)
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "ifm_iolink/set_digital_output",
+    vol.Required("entry_id"): str, vol.Required("port"): int, vol.Required("on"): bool,
+})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def set_digital_output(hass, connection, message):
+    try:
+        coordinator = coordinator_for(hass, message)
+        await set_output(hass, coordinator, message["port"], message["on"])
+        await coordinator.async_request_refresh()
+        connection.send_result(message["id"], {"verified": True})
+    except (ValueError, IfmError) as err:
+        connection.send_error(message["id"], "output_failed", str(err))
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "ifm_iolink/set_port_mode",
+    vol.Required("entry_id"): str, vol.Required("port"): int,
+    vol.Required("expected_mode"): int, vol.Required("target_mode"): int,
+    vol.Required("confirm"): bool,
+})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def set_port_mode(hass, connection, message):
+    try:
+        if message["confirm"] is not True:
+            raise ValueError("Modusänderung muss bestätigt werden")
+        coordinator = coordinator_for(hass, message)
+        try:
+            await change_mode(hass, coordinator, message["port"], message["expected_mode"], message["target_mode"])
+        finally:
+            await coordinator.async_request_refresh()
+        connection.send_result(message["id"], {"verified": True})
+    except (ValueError, IfmError) as err:
+        connection.send_error(message["id"], "mode_failed", str(err))
 
 
 def coordinator_for(hass, message):
@@ -59,6 +102,7 @@ async def snapshot(hass, connection, message):
     result = {
         "masters": [item.snapshot() for item in data["coordinators"].values()],
         "profile_revision": data["library"].revision,
+        "version": installed_version(),
     }
     if message["include_profiles"]:
         result["profiles"] = list(data["library"].all.values())

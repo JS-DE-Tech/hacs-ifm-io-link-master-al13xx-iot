@@ -11,12 +11,32 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities = []
     for port in range(1, coordinator.identity["ports"] + 1):
         entities.append(IfmBinarySensor(coordinator, port))
+        entities.append(IfmDigitalInput(coordinator, port))
+        entities.append(IfmDigitalInput(coordinator, port, pin=2))
         assigned = entry.options.get("ports", {}).get(str(port), {}).get("profile")
         profile = coordinator.library.all.get(assigned, {})
         entities.extend(
             IfmBinarySensor(coordinator, port, field) for field in profile.get("fields", []) if field["type"] == "bool"
         )
     async_add_entities(entities)
+
+
+class IfmDigitalInput(IfmEntity, BinarySensorEntity):
+    """Stable input identity across mode changes and reloads."""
+
+    def __init__(self, coordinator, port, pin=4):
+        self.pin = pin
+        super().__init__(
+            coordinator, port, kind=f"pin{pin}_di", name=f"Digitaleingang DI{2 if pin == 2 else 1} (Pin {pin})"
+        )
+
+    @property
+    def available(self):
+        return super().available and (self.pin == 2 or self.port_data.get("mode") == 1)
+
+    @property
+    def is_on(self):
+        return self.port_data.get(f"pin{self.pin}") if self.available else None
 
 
 class IfmBinarySensor(IfmEntity, BinarySensorEntity):

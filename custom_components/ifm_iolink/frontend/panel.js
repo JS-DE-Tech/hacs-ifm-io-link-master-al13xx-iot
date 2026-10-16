@@ -2,6 +2,31 @@ const BASE = '/ifm_iolink_static';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initialProfile = () => ({id:'custom_mein_sensor',name:'Mein Sensor',manufacturer:'',model:'',description:'',purpose:'',image:'',notes:'',length:2,fields:[{key:'value',name:'Messwert',type:'int',offset:0,length:2,scale:0.01,precision:2}]});
 const formatValue = (value, field) => value == null ? '—' : typeof value === 'boolean' ? (value ? 'Aktiv' : 'Inaktiv') : `${new Intl.NumberFormat('de-DE',{maximumFractionDigits:field.precision ?? 3}).format(value)}${field.unit ? ' '+field.unit : ''}`;
+const channelState = (item, pin, online) => {
+  if(!online)return {tone:'unknown',text:'Nicht erreichbar'};
+  if(pin==='pin4' && item?.mode===3)return item.connected?{tone:'iol',text:'IO-Link verbunden'}:{tone:'unknown',text:'IO-Link nicht verbunden'};
+  if(pin==='pin4' && item?.mode===0)return {tone:'off',text:'Deaktiviert'};
+  const value=item?.[pin];
+  return value===true?{tone:'on',text:'EIN'}:value===false?{tone:'off',text:'AUS'}:{tone:'unknown',text:'Unbekannt'};
+};
+
+const channelLabel = (item, pin) => pin==='pin2'?'Pin 2 · Digitaleingang DI2':'Pin 4 · '+({0:'Deaktiviert',1:'Digitaleingang DI1',2:'Digitalausgang',3:'IO-Link'}[item?.mode] || 'Modus unbekannt');
+const channelDescription = (item, pin, online) => {
+  const label=channelLabel(item,pin);
+  if(online && pin==='pin4' && item?.mode===0)return label;
+  const status=online && pin==='pin4' && item?.mode===3?(item.connected?'Verbunden':'Nicht verbunden'):channelState(item,pin,online).text.replace('EIN','AN');
+  return `${label} · ${status}`;
+};
+
+const modeLabel = mode => ({0:'Disabled',1:'DI',2:'DO',3:'IO-LINK'}[mode] || 'Unbekannt');
+const modeStatus = (item, online) => {
+  const label=({0:'Disabled',1:'DI1',2:'DO',3:'IO-Link'}[item?.mode] || '?');
+  if(!online)return {label,text:channelDescription(item,'pin4',online),tone:'unknown',clickable:false};
+  if(item?.mode===3)return {label,text:channelDescription(item,'pin4',online),tone:item.connected?'on':'off',clickable:false};
+  if(item?.mode===0)return {label,text:'Pin 4 · Deaktiviert',tone:'unknown',clickable:false};
+  const known=typeof item?.pin4==='boolean' && [1,2].includes(item?.mode);
+  return {label,text:channelDescription(item,'pin4',online),tone:known?(item.pin4?'on':'off'):'unknown',clickable:item?.mode===2 && known};
+};
 
 class IfmIolinkPanel extends HTMLElement {
   constructor() {
@@ -17,10 +42,10 @@ class IfmIolinkPanel extends HTMLElement {
     try {
       const next=await this.call('snapshot',{include_profiles:force || !this.profilesLoaded});
       if(next.profiles){this.profilesLoaded=true;this.profileRevision=next.profile_revision;}else{next.profiles=this.data.profiles;if(next.profile_revision!==this.profileRevision)this.profilesLoaded=false;}
-      const signature=JSON.stringify([next.masters.map(m=>[m.entry_id,m.name]),next.profiles.map(p=>[p.id,p.name])]);
+      const signature=JSON.stringify([next.masters.map(m=>[m.entry_id,m.name,Object.values(m.ports || {}).map(p=>p.mode)]),next.profiles.map(p=>[p.id,p.name])]);
       this.data=next; if(!next.masters.some(m=>m.entry_id===this.masterId)) this.masterId=next.masters[0]?.entry_id;
       if(force || signature!==this.signature){this.signature=signature;this.render();}else this.paint();
-    } catch(error) { this.notify(`Verbindung zu Home Assistant: ${error.message || error}`,true); }
+    } catch(error) { this.data.masters.forEach(m=>m.online=false);this.paint();this.notify(`Verbindung zu Home Assistant: ${error.message || error}`,true); }
     finally {this.loading=false;}
   }
   get master(){return this.data.masters.find(m=>m.entry_id===this.masterId);}
@@ -29,13 +54,13 @@ class IfmIolinkPanel extends HTMLElement {
   notify(message,error=false){const el=this.shadowRoot.querySelector('#notice');if(el){el.textContent=message;el.className=error?'notice error':'notice';}}
   render() {
     const master=this.master;
-    this.shadowRoot.innerHTML=`<link rel="stylesheet" href="${BASE}/panel.css"><div class="app">
+    this.shadowRoot.innerHTML=`<link rel="stylesheet" href="${BASE}/panel.css?v=${esc(this.data.version || '')}"><div class="app">
       <header><div class="brand"><img class="brand-icon" src="${BASE}/images/integration-icon.png" alt="ifm IO-Link Logo"><div><span class="eyebrow">LOKAL VERBUNDEN</span><h1>ifm IO-Link Command Center</h1></div></div><div class="header-actions"><a href="/config/integrations/dashboard/add?domain=ifm_iolink">+ Master hinzufügen</a><span class="tag">AL1350 or AL1352 with IoT core</span></div></header>
       <div class="toolbar"><nav><button data-page="overview" class="${this.page==='overview'?'active':''}">Portübersicht</button><button data-page="library" class="${this.page==='library'?'active':''}">Gerätebibliothek <span>${this.data.profiles.length}</span></button></nav>
       ${master?`<label class="master-choice">Master <select id="master">${this.data.masters.map(m=>`<option value="${esc(m.entry_id)}" ${m===master?'selected':''}>${esc(m.name)}</option>`).join('')}</select></label>`:''}</div>
       <div id="notice" class="notice" role="status" aria-live="polite"></div>
       ${this.page==='overview'?this.overview():this.library()}
-      <footer><span>ifm IO-Link · Direkte Verbindung zu Home Assistant</span><span>by JS-DE-Tech</span></footer></div>`;
+      <footer><span>ifm IO-Link · Direkte Verbindung zu Home Assistant</span><span>by JS-DE-Tech${this.data.version?` · v${esc(this.data.version)}`:''}</span></footer></div>`;
     this.shadowRoot.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{this.page=b.dataset.page;this.render();});
     this.shadowRoot.querySelector('#master')?.addEventListener('change',e=>{this.masterId=e.target.value;this.port=1;this.render();});
     this.bindOverview(); this.bindLibrary(); this.paint(); this.paintParameters();
@@ -54,16 +79,18 @@ class IfmIolinkPanel extends HTMLElement {
   portCard(number) {
     const item=this.master.ports[number] || {};const profile=this.profile(item.profile);const assignment=item.assignment || {};
     const side=number%2?'left':'right';
-    return `<button class="port-card ${side} ${number===this.port?'selected':''}" data-port="${number}" style="grid-row:${Math.ceil(number/2)};grid-column:${side==='left'?1:3}">
-      <span class="port-line"></span><div class="port-card-top"><span class="port-label">X${String(number).padStart(2,'0')}</span><span class="port-state" data-status="${number}"></span></div>
+    return `<div role="button" tabindex="0" class="port-card ${side} ${number===this.port?'selected':''}" data-port="${number}" style="grid-row:${Math.ceil(number/2)};grid-column:${side==='left'?1:3}">
+      <span class="port-line"></span><div class="port-card-top"><span class="port-label">X${String(number).padStart(2,'0')}</span><button class="signal-badge unknown" data-toggle="${number}" type="button" disabled></button><span class="signal-badge unknown" data-di2="${number}" role="img">DI2</span></div>
       <div class="device-row">${profile?.image?`<img src="${esc(profile.image)}" alt="${esc(profile.model)}" referrerpolicy="no-referrer">`:'<span class="unknown-device">?</span>'}<div><strong>${esc(assignment.name || profile?.model || 'Gerät auswählen')}</strong><small>${esc(assignment.location || (item.identity?.productname ? 'Gerät erkannt' : 'Noch nicht zugewiesen'))}</small></div></div>
       <div class="card-values">${(profile?.fields || []).filter(f=>f.type!=='bool').slice(0,2).map(f=>`<div><small>${esc(f.name)}</small><b data-value="${number}:${esc(f.key)}">—</b></div>`).join('') || `<small>${esc(item.identity?.productname || 'Unbekannt / kein Gerät')}</small>`}</div>
-      ${assignment.purpose?`<div class="purpose">${esc(assignment.purpose)}</div>`:''}</button>`;
+      ${assignment.purpose?`<div class="purpose">${esc(assignment.purpose)}</div>`:''}</div>`;
   }
   inspector(){
     const item=this.selected || {};const profile=this.profile(item.profile);const a=item.assignment || {};
     return `<div class="inspector-title"><div><span class="eyebrow">ANSCHLUSS X${String(this.port).padStart(2,'0')}</span><h3>Gerät & Messwerte</h3></div><span class="port-state" data-status="${this.port}"></span></div>
-      <form id="assignment"><label>Geräteprofil<select name="profile"><option value="unknown">Unbekannt · Debug-Datei erzeugen</option>${this.data.profiles.map(p=>`<option value="${esc(p.id)}" ${p.id===item.profile?'selected':''}>${esc(p.name)}${item.suggested?.includes(p.id)?' · passend zur Kennung':''}</option>`).join('')}</select></label>
+      <label>Portmodus<select id="port-mode">${item.mode==null?'<option value="" selected>Unbekannt</option>':''}${[2,3,1,0].map(mode=>`<option value="${mode}" ${item.mode===mode?'selected':''}>${modeLabel(mode)}</option>`).join('')}</select></label><button id="apply-mode" type="button">Portmodus aktivieren</button>
+      <p class="field-help">Modusänderungen werden vor dem Schreiben bestätigt. Die Profilzuordnung bleibt erhalten.</p>
+      <form id="assignment"><label>Geräteprofil<select name="profile" ${item.mode!==3?'disabled':''}><option value="unknown">Unbekannt · Debug-Datei erzeugen</option>${this.data.profiles.map(p=>`<option value="${esc(p.id)}" ${p.id===item.profile?'selected':''}>${esc(p.name)}${item.suggested?.includes(p.id)?' · passend zur Kennung':''}</option>`).join('')}</select></label>
       ${item.suggested?.length && item.profile==='unknown'?`<p class="suggestion">Passendes Profil erkannt. Im Dropdown als „passend zur Kennung“ markiert.</p>`:''}
       <label>Gerätebezeichnung<input name="name" maxlength="500" value="${esc(a.name)}" placeholder="z. B. Druck am Poolfilter"></label>
       <label>Standort<input name="location" maxlength="500" value="${esc(a.location)}" placeholder="z. B. Heizungsraum"></label>
@@ -71,7 +98,10 @@ class IfmIolinkPanel extends HTMLElement {
       <button class="primary" type="submit">Portzuweisung speichern</button></form>
       <div class="action-row"><button id="debug">Debug-Datei</button><button id="new-device">Eigenes Gerät</button></div>
       <div class="decode-error" id="decode-error" role="status"></div>
-      ${profile?`<section class="readings"><h4>Prozesswerte <span>${profile.fields.length}</span></h4>${profile.fields.map(f=>`<div class="reading"><span>${esc(f.name)}</span><strong data-value="${this.port}:${esc(f.key)}">—</strong></div>`).join('')}</section>
+      <section class="readings"><h4>Kanalstatus</h4><p class="field-help">Aus den gemeldeten Pin-Zuständen abgeleitet; keine exakte Wiedergabe der physischen LED-Blinkmuster.</p>
+      ${['pin4','pin2'].map(pin=>`<div class="reading"><span>${channelLabel(item,pin)}</span><strong class="channel-led unknown" data-channel="${this.port}:${pin}">Unbekannt</strong></div>`).join('')}
+      ${item.mode===2?'<div class="action-row"><button data-output="on">Ausgang EIN</button><button data-output="off">Ausgang AUS</button></div><p class="field-help">Schaltet Pin 4 nach frischer DO-Modus-Prüfung und bestätigt den Wert durch Rücklesen.</p>':'<p class="field-help">Zum Schalten oben den Portmodus DO wählen. DI zeigt den Eingangszustand.</p>'}</section>
+      ${profile && item.mode===3?`<section class="readings"><h4>Prozesswerte <span>${profile.fields.length}</span></h4>${profile.fields.map(f=>`<div class="reading"><span>${esc(f.name)}</span><strong data-value="${this.port}:${esc(f.key)}">—</strong></div>`).join('')}</section>
       <details><summary>Geräteinformationen & Hinweise</summary><p>${esc(profile.description)}</p><p>${esc(profile.notes)}</p><small>Quelle: ${esc(profile.source)}</small></details>
       ${profile.parameters?.length?`<details class="parameter-list"><summary>Parameterliste anzeigen</summary><div class="parameter parameter-read-all"><div><b>Alle Gerätedaten lesen</b></div><button id="read-all" title="Alle Gerätedaten lesen">Lesen</button></div><p id="parameter-status" role="status">Alle im Profil enthaltenen Parameter werden nacheinander gelesen.</p>${profile.parameters.map(p=>`<div class="parameter"><div><b>${esc(p.name)}</b><small>Index ${p.index} · ${esc(p.datatype)} · ${esc(p.access || 'ro')} · ${esc(p.description)}</small><output id="parameter-${p.index}">Noch nicht gelesen</output></div><button data-read="${p.index}" title="Parameter ${esc(p.name)} lesen">Lesen</button></div>`).join('')}</details><details><summary>Sensortausch & Sicherung</summary><div class="parameter-actions backup-actions"><div class="backup-action"><button id="backup-parameters" aria-describedby="backup-help">Parametersicherung erstellen</button><p id="backup-help">Liest die aktuellen Profilparameter des Sensors und speichert sie für diesen Port in Home Assistant. Nur eine vollständige Abfrage ersetzt die bisherige Sicherung.</p></div><div class="backup-action"><button id="restore-saved" aria-describedby="restore-saved-help" disabled>Parametersicherung wiederherstellen</button><p id="restore-saved-help">Verwendet die für diesen Port in Home Assistant gespeicherte Sicherung. Zeigt zuerst eine Vorschau; erst nach deiner Bestätigung werden passende Parameter auf den angeschlossenen Sensor übertragen.</p></div><div class="backup-action"><button id="download-parameters" aria-describedby="download-help" disabled>Sicherung als JSON herunterladen</button><p id="download-help">Lädt die in Home Assistant gespeicherte Port-Sicherung als JSON-Datei auf deinen Computer. Der Sensor wird dabei nicht erneut ausgelesen.</p></div><div class="backup-action"><label class="button upload">JSON-Sicherung wiederherstellen<input id="restore-upload" type="file" accept=".json,application/json" aria-label="JSON-Sicherung auswählen" aria-describedby="restore-file-help"></label><p id="restore-file-help">Wähle eine zuvor heruntergeladene JSON-Sicherung von deinem Computer. Die Datei und der Sensor werden geprüft; anschließend bestätigst du die Wiederherstellung in der Vorschau.</p></div><div class="backup-action"><button id="restore-report" aria-describedby="restore-report-help" disabled>Protokoll herunterladen</button><p id="restore-report-help">Lädt das Protokoll der letzten Wiederherstellung an diesem Port herunter: ursprüngliche Werte, bestätigte Änderungen und mögliche Fehler. Erst nach einem Wiederherstellungsversuch verfügbar.</p></div></div><p id="backup-status"></p><p id="restore-status" role="status"></p><p>Eine Wiederherstellung prüft Gerätekennung, Profil und aktuelle Werte. Nur unterstützte schreibbare Parameter werden nach Bestätigung übertragen und zurückgelesen. Unveränderte Werte werden ausgelassen. Bei Fehlern wird gestoppt; bereits geschriebene Werte bleiben bestehen. Das Protokoll enthält die ursprünglichen Werte. Es erfolgt kein automatischer Rollback. Für den automatischen Sensortausch kann im Master die IO-Link-Funktion „Backup + Restore“ mit einem kompatiblen Ersatzsensor eingerichtet werden.</p></details>`:''}`:'<div class="unknown-info"><h4>Ein neues Gerät?</h4><p>Importiere seine Hersteller-IODD in der Gerätebibliothek. Alternativ enthält die Debug-Datei Rohwerte und Gerätekennung für ein eigenes Übersetzungsprofil.</p></div>'}
       <details><summary>Verbindung & Rohdaten</summary><dl>${['productname','vendorid','deviceid','serial'].map(k=>`<dt>${esc(k)}</dt><dd>${esc(item.identity?.[k] ?? '—')}</dd>`).join('')}</dl><code id="raw"></code><small id="updated"></small></details>`;
@@ -94,11 +124,43 @@ class IfmIolinkPanel extends HTMLElement {
     this.download(`iolink-port-${this.port}-debug.json`,result); return result;
   }
   download(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  async toggleOutput(port){
+    const master=this.master,item=master?.ports?.[port];
+    if(!modeStatus(item,master?.online).clickable)return;
+    const entry_id=master.entry_id,key=`${entry_id}:${port}:${item.profile}`;
+    if(this.parameterBusy.has(key))return;
+    this.parameterBusy.add(key);this.paint();
+    try{await this.call('set_digital_output',{entry_id,port,on:!item.pin4});await this.refresh();this.notify('DO-Rückmeldung vom Master bestätigt.');}
+    catch(error){item.pin4=null;this.notify(error.message || String(error),true);}
+    finally{this.parameterBusy.delete(key);this.paint();}
+  }
+  async changeMode(){
+    const entry_id=this.masterId,port=this.port,expected_mode=this.selected?.mode;
+    const target_mode=Number(this.shadowRoot.querySelector('#port-mode').value),key=this.portKey();
+    if(expected_mode==null || target_mode===expected_mode || this.parameterBusy.has(key))return;
+    if(!window.confirm(`${this.master.name} · X${String(port).padStart(2,'0')}: ${modeLabel(expected_mode)} → ${modeLabel(target_mode)}?\nDie Funktion an Pin 4 wird geändert. Profilzuordnungen bleiben gespeichert.${target_mode===2?'\nNach der Umschaltung wird AUS geschrieben und geprüft. Während der Umschaltung ist kein unterbrechungs- oder impulsfreier Ausgang garantiert.':''}`))return;
+    this.parameterBusy.add(key);this.paint();
+    let failure;
+    try{await this.call('set_port_mode',{entry_id,port,expected_mode,target_mode,confirm:true});}
+    catch(error){failure=error.message || String(error);}
+    finally{this.parameterBusy.delete(key);await this.refresh(true);}
+    this.notify(failure || 'Portmodus durch Rücklesen bestätigt.',!!failure);
+  }
   bindOverview(){
-    this.shadowRoot.querySelectorAll('[data-port]').forEach(b=>b.onclick=()=>{this.port=Number(b.dataset.port);this.render();});
+    this.shadowRoot.querySelector('#apply-mode')?.addEventListener('click',()=>this.changeMode());
+    this.shadowRoot.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=e=>{e.stopPropagation();this.toggleOutput(Number(b.dataset.toggle));});
+    this.shadowRoot.querySelectorAll('[data-output]').forEach(b=>b.onclick=async()=>{
+      const key=this.portKey(),entry_id=this.masterId,port=this.port;
+      if(this.parameterBusy.has(key))return;
+      this.parameterBusy.add(key);this.paint();
+      try{await this.call('set_digital_output',{entry_id,port,on:b.dataset.output==='on'});await this.refresh();this.notify('Ausgang durch Rücklesen bestätigt.');}
+      catch(e){const master=this.data.masters.find(m=>m.entry_id===entry_id);if(master?.ports?.[port])master.ports[port].pin4=null;this.notify(e.message || String(e),true);}
+      finally{this.parameterBusy.delete(key);this.paint();}
+    });
+    this.shadowRoot.querySelectorAll('[data-port]').forEach(b=>{b.onclick=()=>{this.port=Number(b.dataset.port);this.render();};b.onkeydown=e=>{if(e.target===b && ['Enter',' '].includes(e.key)){e.preventDefault();b.click();}};});
     this.shadowRoot.querySelector('#assignment')?.addEventListener('submit',async e=>{
       e.preventDefault();const button=e.submitter;button.disabled=true;
-      try{const values=Object.fromEntries(new FormData(e.target));if(values.profile==='unknown') await this.downloadDebug();await this.call('assign',{entry_id:this.masterId,port:this.port,...values});this.notify('Portzuweisung gespeichert. Home Assistant lädt die Sensoren neu.');setTimeout(()=>this.refresh(true),1500);}catch(error){this.notify(error.message || String(error),true);}finally{button.disabled=false;}
+      try{const values=Object.fromEntries(new FormData(e.target));if(!values.profile)values.profile=this.selected?.profile || 'unknown';if(values.profile==='unknown' && this.selected?.mode===3) await this.downloadDebug();await this.call('assign',{entry_id:this.masterId,port:this.port,...values});this.notify('Portzuweisung gespeichert. Home Assistant lädt die Sensoren neu.');setTimeout(()=>this.refresh(true),1500);}catch(error){this.notify(error.message || String(error),true);}finally{button.disabled=false;}
     });
     this.shadowRoot.querySelector('#debug')?.addEventListener('click',()=>this.downloadDebug().catch(e=>this.notify(e.message,true)));
     this.shadowRoot.querySelector('#new-device')?.addEventListener('click',()=>{this.testRaw=this.selected?.raw || '';this.page='library';this.draft=initialProfile();this.draft.length=Math.max(1,this.testRaw.length/2);this.render();});
@@ -189,7 +251,12 @@ class IfmIolinkPanel extends HTMLElement {
     const master=this.master;if(!master)return;
     const el=this.shadowRoot.querySelector('#master-status');if(el){el.textContent=master.online?'● Master verbunden':'○ Master nicht erreichbar';el.classList.toggle('offline',!master.online);}
     this.shadowRoot.querySelectorAll('[data-value]').forEach(e=>{const [port,key]=e.dataset.value.split(':');const item=master.ports[port];const field=this.profile(item?.profile)?.fields.find(f=>f.key===key);if(field)e.textContent=formatValue(master.online&&item.connected&&!item.error?item.values[key]:null,field);});
-    this.shadowRoot.querySelectorAll('[data-status]').forEach(e=>{const item=master.ports[e.dataset.status];const online=master.online&&item?.connected;e.textContent=online?'● Verbunden':'○ Offline';e.classList.toggle('offline',!online);});
+    this.shadowRoot.querySelectorAll('[data-status]').forEach(e=>{const item=master.ports[e.dataset.status];const online=master.online&&item?.connected;const digital=master.online&&[1,2].includes(item?.mode);e.textContent=digital?(item.mode===2?'Digitalausgang':'Digitaleingang'):online?'● Verbunden':'○ Offline';e.classList.toggle('offline',!online&&!digital);});
+    this.shadowRoot.querySelectorAll('[data-channel]').forEach(e=>{const [port,pin]=e.dataset.channel.split(':');const state=channelState(master.ports[port],pin,master.online);e.className=`channel-led ${state.tone}`;e.textContent=state.text.replace('IO-Link ','').replace('EIN','AN');e.title=channelDescription(master.ports[port],pin,master.online);});
+    this.shadowRoot.querySelectorAll('[data-output]').forEach(b=>b.disabled=!master.online||this.selected?.mode!==2||this.parameterBusy.has(this.portKey()));
+    this.shadowRoot.querySelectorAll('[data-toggle]').forEach(b=>{const item=master.ports[b.dataset.toggle],state=modeStatus(item,master.online);b.textContent=state.label;b.title=state.text;b.className=`signal-badge ${state.tone}`;b.disabled=!state.clickable||this.parameterBusy.has(`${master.entry_id}:${b.dataset.toggle}:${item?.profile}`);b.setAttribute('aria-label',`${state.text}, Port ${b.dataset.toggle}`);});
+    this.shadowRoot.querySelectorAll('[data-di2]').forEach(e=>{const state=channelState(master.ports[e.dataset.di2],'pin2',master.online);e.className=`signal-badge ${state.tone}`;e.title=channelDescription(master.ports[e.dataset.di2],'pin2',master.online);e.setAttribute('aria-label',e.title);});
+    const apply=this.shadowRoot.querySelector('#apply-mode');if(apply)apply.disabled=!master.online||this.selected?.mode==null||this.parameterBusy.has(this.portKey());
     const raw=this.shadowRoot.querySelector('#raw');if(raw)raw.textContent=this.selected?.raw || 'Keine Prozessdaten';
     const error=this.shadowRoot.querySelector('#decode-error');if(error)error.textContent=this.selected?.error || '';
     const updated=this.shadowRoot.querySelector('#updated');if(updated)updated.textContent=this.selected?.updated?'Letzte Antwort: '+new Date(this.selected.updated).toLocaleTimeString('de-DE'):'';
@@ -199,12 +266,13 @@ class IfmIolinkPanel extends HTMLElement {
     const grid=this.shadowRoot.querySelector('.topology-grid');const svg=this.shadowRoot.querySelector('.wires');const picture=this.shadowRoot.querySelector('.master-device img');if(!grid||!svg||!picture)return;
     const box=grid.getBoundingClientRect(), img=picture.getBoundingClientRect();if(!img.height)return;
     const rows=this.master.identity.model==='AL1350'?[.66,.83]:[.477,.61,.744,.88];
+    const lanes=rows.length===4?[0,1,1,0]:rows.map(()=>0);
     svg.setAttribute('viewBox',`0 0 ${box.width} ${box.height}`);svg.replaceChildren();
     this.shadowRoot.querySelectorAll('[data-port]').forEach(card=>{
-      const port=Number(card.dataset.port),left=port%2===1,rect=card.getBoundingClientRect();
+      const port=Number(card.dataset.port),left=port%2===1,rect=card.getBoundingClientRect(),rowIndex=Math.floor((port-1)/2);
       const x=(left?rect.right:rect.left)-box.left,y=(rect.top+rect.height/2)-box.top;
-      const endX=img.left-box.left+img.width*(left?.275:.73),endY=img.top-box.top+img.height*rows[Math.floor((port-1)/2)];
-      const elbow=(left?img.left-9:img.right+9)-box.left,color=port===this.port?'#e58b40':'#a9becd';
+      const endX=img.left-box.left+img.width*(left?.275:.73),endY=img.top-box.top+img.height*rows[rowIndex];
+      const elbow=(left?img.left-9-lanes[rowIndex]*7:img.right+9+lanes[rowIndex]*7)-box.left,color=port===this.port?'#e58b40':'#a9becd';
       const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',`M ${x} ${y} H ${elbow} V ${endY} H ${endX}`);path.setAttribute('fill','none');path.setAttribute('stroke',color);path.setAttribute('stroke-width','1.5');svg.append(path);
       const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');dot.setAttribute('cx',endX);dot.setAttribute('cy',endY);dot.setAttribute('r','3');dot.setAttribute('fill',color);svg.append(dot);
     });
