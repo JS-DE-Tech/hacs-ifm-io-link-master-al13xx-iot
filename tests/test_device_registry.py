@@ -39,32 +39,43 @@ def lifecycle(request, monkeypatch):
                 assert "via_device" not in kwargs, "Deprecated API used on current HA"
             else:
                 assert "via_device_id" not in kwargs, "Unsupported keyword on HA 2025.7"
-            key = (config_entry_id, frozenset(identifiers))
+            # HA matches identifiers globally, not within a config entry.
+            key = frozenset(identifiers)
             parent = kwargs.get("via_device_id")
             if "via_device" in kwargs:
-                parent = devices[(config_entry_id, frozenset({kwargs["via_device"]}))].id
+                parent = devices[frozenset({kwargs["via_device"]})].id
             if parent is not None:
                 assert isinstance(parent, str)
-                assert any(d.id == parent and d.config_entry_id == config_entry_id for d in devices.values())
+                assert any(d.id == parent and config_entry_id in d.config_entries for d in devices.values())
             if key not in devices:
                 devices[key] = SimpleNamespace(
                     id=f"registry-{len(devices)}",
-                    config_entry_id=config_entry_id,
+                    config_entries=set(),
                     name_by_user=None,
                     area_id=None,
                     disabled_by=None,
                 )
             device = devices[key]
+            device.config_entries.add(config_entry_id)
             device.via_device_id = parent
             calls.append((config_entry_id, identifiers, kwargs))
             return device
+
+        def async_remove(self, entity_id):
+            for key, entity in list(entities.items()):
+                if entity["entity_id"] == entity_id:
+                    del entities[key]
 
     registry = Registry()
     module("homeassistant.helpers.device_registry", DeviceInfo=info, async_get=lambda hass: registry)
     module(
         "homeassistant.helpers.entity_registry",
-        async_get=lambda hass: None,
-        async_entries_for_config_entry=lambda reg, entry_id: [],
+        async_get=lambda hass: registry,
+        async_entries_for_config_entry=lambda reg, entry_id: [
+            SimpleNamespace(**entity, unique_id=unique_id, platform=DOMAIN,
+                            options={}, disabled_by=None)
+            for (owner, unique_id), entity in entities.items() if owner == entry_id
+        ],
     )
     module("homeassistant.helpers.aiohttp_client", async_get_clientsession=lambda hass: None)
     module("homeassistant.components.panel_custom")
@@ -89,9 +100,13 @@ def lifecycle(request, monkeypatch):
 
         def __init__(self, hass, entry, client, identity, library):
             self.entry, self.identity, self.library = entry, identity, library
+            self.data = None
 
         async def async_config_entry_first_refresh(self):
             pass
+
+        def async_set_updated_data(self, data):
+            self.data = data
 
     module("custom_components.ifm_iolink.coordinator", IfmCoordinator=Coordinator)
     module("custom_components.ifm_iolink.profiles", ProfileLibrary=object)
@@ -137,6 +152,8 @@ def lifecycle(request, monkeypatch):
             for item in items:
                 device = registry.async_get_or_create(config_entry_id=entry.entry_id, **item._attr_device_info)
                 key = (entry.entry_id, item._attr_unique_id)
+                assert not any(owner != entry.entry_id and uid == item._attr_unique_id
+                               for owner, uid in entities), "Entity unique ID belongs to another entry"
                 entities.setdefault(key, {"entity_id": f"sensor.saved_{len(entities)}", "device_id": device.id})
                 assert entities[key]["device_id"] == device.id
 
@@ -217,16 +234,22 @@ def test_device_identity_survives_setup_and_reload(lifecycle, existing):
 
 
 def test_master_id_is_scoped_to_config_entry(lifecycle):
-    """Even matching identifiers must use the entry-specific returned device."""
+    """Port parents use the actual device for the corresponding master."""
     ctx = lifecycle
     first, second = ctx.entry("entry-a"), ctx.entry("entry-b")
+    second.unique_id = "SECOND"
+    second.data["url"] = "http://second"
+    async def identify(client):
+        return {"serial": "SECOND" if client.url == "http://second" else "MASTER",
+                "model": "AL1350", "ports": 4}
+    ctx.setup.IfmClient.identify = identify
     asyncio.run(ctx.setup.async_setup_entry(ctx.hass, first))
     asyncio.run(ctx.setup.async_setup_entry(ctx.hass, second))
     assert first.runtime_data.master_device_id != second.runtime_data.master_device_id
-    for (entry_id, identifiers), device in ctx.devices.items():
-        if identifiers == frozenset({(DOMAIN, "MASTER")}):
+    for identifiers, device in ctx.devices.items():
+        if identifiers in (frozenset({(DOMAIN, "MASTER")}), frozenset({(DOMAIN, "SECOND")})):
             continue
-        entry = first if entry_id == first.entry_id else second
+        entry = first if first.entry_id in device.config_entries else second
         assert device.via_device_id == entry.runtime_data.master_device_id
 
 
@@ -278,3 +301,111 @@ def test_di2_is_independent_of_pin4_mode(lifecycle, monkeypatch, mode, value):
     monkeypatch.setattr(CoordinatorEntity, "available", property(lambda self: False))
     assert not entity.available
     assert entity.is_on is None
+
+
+@pytest.mark.parametrize("replacement_model,port_count", [("AL1350", 4), ("AL1352", 8)])
+def test_replacement_keeps_every_registry_id(lifecycle, replacement_model, port_count):
+    ctx = lifecycle
+    entry = ctx.entry()
+    asyncio.run(ctx.setup.async_setup_entry(ctx.hass, entry))
+    devices_before = {key: value.id for key, value in ctx.devices.items()}
+    entities_before = deepcopy(ctx.entities)
+    options_before = deepcopy(entry.options)
+    for serial in ("REPLACEMENT-1", "REPLACEMENT-2"):
+        entry.data.update(registry_serial="MASTER", serial=serial, model=replacement_model, ports=port_count)
+        entry.unique_id = serial
+        async def identify(client, serial=serial):
+            return {"serial": serial, "model": replacement_model, "ports": port_count}
+        ctx.setup.IfmClient.identify = identify
+        asyncio.run(ctx.setup.async_unload_entry(ctx.hass, entry))
+        asyncio.run(ctx.setup.async_setup_entry(ctx.hass, entry))
+        assert entry.options == options_before
+        for key, old_id in devices_before.items():
+            assert ctx.devices[key].id == old_id
+        for key, value in entities_before.items():
+            assert ctx.entities[key] == value
+        assert len(ctx.devices) == port_count + 1
+
+
+@pytest.mark.parametrize("condition", ["offline", "paused", "other_master", "other_model", "first_poll_offline"])
+def test_management_loads_during_replacement_without_new_devices(lifecycle, condition):
+    from custom_components.ifm_iolink.api import IfmError
+
+    ctx = lifecycle
+    entry = ctx.entry()
+    entry.data.update(serial="MASTER", model="AL1350", ports=4)
+    asyncio.run(ctx.setup.async_setup_entry(ctx.hass, entry))
+    before = deepcopy(ctx.entities)
+    async def identify(client):
+        if condition == "paused":
+            pytest.fail("Paused setup must not contact hardware")
+        if condition == "offline":
+            raise IfmError("unreachable")
+        if condition == "other_model":
+            return {"serial": "MASTER", "model": "AL1352", "ports": 8}
+        if condition == "first_poll_offline":
+            return {"serial": "MASTER", "model": "AL1350", "ports": 4}
+        return {"serial": "OTHER", "model": "AL1352", "ports": 8}
+    ctx.setup.IfmClient.identify = identify
+    if condition == "first_poll_offline":
+        async def failed_refresh(coordinator):
+            raise RuntimeError("First poll failed after identification")
+        ctx.setup.IfmCoordinator.async_config_entry_first_refresh = failed_refresh
+    entry.data["replacement_paused"] = condition == "paused"
+    asyncio.run(ctx.setup.async_unload_entry(ctx.hass, entry))
+    asyncio.run(ctx.setup.async_setup_entry(ctx.hass, entry))
+    assert ctx.entities == before and len(ctx.devices) == 5
+    assert not entry.runtime_data.last_update_success
+    if condition == "other_master":
+        assert entry.runtime_data.replacement_detected["serial"] == "OTHER"
+    if condition == "other_model":
+        assert entry.runtime_data.replacement_detected["model"] == "AL1352"
+
+
+def test_registry_cleanup_during_replacement_keeps_current_ids(lifecycle):
+    ctx = lifecycle
+    entry = ctx.entry()
+    asyncio.run(ctx.setup.async_setup_entry(ctx.hass, entry))
+    before = deepcopy(ctx.entities)
+    ctx.entities[(entry.entry_id, "MASTER_port_1_obsolete_value")] = {
+        "entity_id": "sensor.stale_profile_value", "device_id": "obsolete"
+    }
+    entry.data.update(registry_serial="MASTER", serial="NEW", model="AL1352", ports=8)
+    entry.unique_id = "NEW"
+    async def identify(client):
+        return {"serial": "NEW", "model": "AL1352", "ports": 8}
+    ctx.setup.IfmClient.identify = identify
+    asyncio.run(ctx.setup.async_unload_entry(ctx.hass, entry))
+    asyncio.run(ctx.setup.async_setup_entry(ctx.hass, entry))
+    assert (entry.entry_id, "MASTER_port_1_obsolete_value") not in ctx.entities
+    assert all(ctx.entities[key] == value for key, value in before.items())
+
+
+def test_registry_stub_matches_same_identifiers_globally(lifecycle):
+    registry = lifecycle.registry
+    first = registry.async_get_or_create(config_entry_id="first", identifiers={(DOMAIN, "same")})
+    second = registry.async_get_or_create(config_entry_id="second", identifiers={(DOMAIN, "same")})
+    assert first is second
+    assert first.config_entries == {"first", "second"}
+
+@pytest.mark.parametrize("mode", [1, 2])
+def test_digital_device_assignment_keeps_existing_entity_ids(lifecycle, mode):
+    ctx = lifecycle
+    entry = ctx.entry()
+    asyncio.run(ctx.setup.async_setup_entry(ctx.hass, entry))
+    before = deepcopy(ctx.entities)
+    ctx.hass.data[DOMAIN]["library"].all["custom_relay"] = {
+        "id": "custom_relay", "kind": "digital", "name": "Relay", "manufacturer": "Relay maker",
+        "model": "24V", "length": 0, "fields": [], "image": "/local/relay.png"}
+    entry.options["ports"]["1"]["digital_profile"] = "custom_relay"
+    asyncio.run(ctx.setup.async_unload_entry(ctx.hass, entry))
+    asyncio.run(ctx.setup.async_setup_entry(ctx.hass, entry))
+    assert ctx.entities == before
+    coordinator = entry.runtime_data
+    coordinator.data = {"1": {"mode": mode}}
+    entity_module = importlib.import_module("custom_components.ifm_iolink.entity")
+    entity = entity_module.IfmEntity(coordinator, 1, kind="pin4_do")
+    assert entity._attr_unique_id == "MASTER_port_1_pin4_do"
+    assert entity._attr_device_info["manufacturer"] == "Relay maker"
+    assert entity._attr_device_info["model"] == "24V"
+    assert entry.options["ports"]["1"]["profile"] == "pressure"

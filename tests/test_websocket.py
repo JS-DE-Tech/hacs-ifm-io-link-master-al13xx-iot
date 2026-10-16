@@ -137,6 +137,7 @@ def test_panel_output_uses_guarded_write(ws, mode, success):
         "preview_restore",
         "restore_parameters",
         "get_restore_report",
+        "replacement",
     ],
 )
 @pytest.mark.parametrize("user", [None, SimpleNamespace(is_admin=False)])
@@ -277,3 +278,31 @@ def test_mode_command_requires_confirmation(ws, confirm):
     assert bool(results) == confirm
     assert bool(errors) != confirm
     assert writes == ([(1, 1)] if confirm else [])
+
+@pytest.mark.parametrize("digital_id,success", [("custom_relay", True), ("unknown", True), ("pressure", False), ("missing", False)])
+def test_digital_assignment_preserves_iolink_profile_and_never_writes_hardware(ws, digital_id, success):
+    hass, c, state, writes, _ = digital_fixture()
+    c.entry.options = {"interval": 2, "ports": {"1": {"profile": "pressure", "digital_profile": "custom_relay", "extra": "keep"}}}
+    c.library = SimpleNamespace(all={"pressure": {"id": "pressure"}, "custom_relay": {"id": "custom_relay", "kind": "digital"}})
+    hass.tasks = []
+    updates, results, errors = [], [], []
+    hass.config_entries = SimpleNamespace(async_update_entry=lambda entry, **kwargs: updates.append(kwargs))
+    connection = SimpleNamespace(user=SimpleNamespace(is_admin=True), send_result=lambda *a: results.append(a), send_error=lambda *a: errors.append(a))
+
+    async def run():
+        message = ws.assign.schema({"id": 1, "type": "ifm_iolink/assign", "entry_id": "entry", "port": 1,
+                                    "profile": "pressure", "digital_profile": digital_id, "name": "Relay"})
+        ws.assign(hass, connection, message)
+        await asyncio.gather(*hass.tasks)
+
+    asyncio.run(run())
+    assert bool(results) is success
+    assert bool(errors) is not success
+    assert not writes
+    c.client.identify.assert_not_called()
+    if success:
+        saved = updates[0]["options"]["ports"]["1"]
+        assert saved["profile"] == "pressure"
+        assert saved["digital_profile"] == digital_id
+        assert saved["extra"] == "keep"
+        assert updates[0]["options"]["interval"] == 2

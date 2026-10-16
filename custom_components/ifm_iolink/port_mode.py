@@ -7,6 +7,8 @@ from .digital import digital_value, port_mode
 
 async def change_mode(hass, coordinator, port, expected_mode, target_mode):
     """Do not modify assignments or retry writes whose outcome is uncertain."""
+    if coordinator.entry.data.get("replacement_paused"):
+        raise ValueError("Masteraustausch vorbereitet")
     if (type(port) is not int or not 1 <= port <= coordinator.identity["ports"]
             or port_mode(expected_mode) is None or port_mode(target_mode) is None):
         raise ValueError("Ungültiger Port/Modus")

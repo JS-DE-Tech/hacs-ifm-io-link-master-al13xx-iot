@@ -10,7 +10,7 @@ target = ROOT / f"dist/ifm-iolink-{version}.zip"
 target.parent.mkdir(exist_ok=True)
 with ZipFile(target, "w", ZIP_DEFLATED) as archive:
     paths = list((ROOT / "custom_components/ifm_iolink").rglob("*"))
-    paths += [ROOT / "README.md", ROOT / "README.en.md", ROOT / "hacs.json", ROOT / "LICENSE", *list((ROOT / "docs").rglob("*"))]
+    paths += [ROOT / "README.md", ROOT / "README.en.md", ROOT / "CHANGELOG.md", ROOT / "hacs.json", ROOT / "LICENSE", *list((ROOT / "docs").rglob("*"))]
     for path in sorted(paths):
         if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
             archive.write(path, path.relative_to(ROOT))

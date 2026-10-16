@@ -1,5 +1,17 @@
 # Geräteprofile
 
+## Eigene digitale Geräte für DI und DO
+
+In **Gerätebibliothek → Eigenes Gerät** den Gerätetyp **Digitales Gerät (DI / DO)** wählen, einen Namen eintragen und über **Bild hochladen** ein PNG-, JPEG- oder WebP-Bild ergänzen. Hersteller, Modell, Beschreibung und Hinweise sind optional. JSON oder eine IODD werden dafür nicht benötigt.
+
+Die Profil-ID entsteht bei neuen Geräten automatisch aus dem Gerätenamen, beispielsweise `custom_druckluftverteiler`. Bereits belegte IDs bekommen eine Nummer. Beim Umbenennen gespeicherter Geräte bleibt ihre ID erhalten; eine manuell eingegebene ID wird ebenfalls nicht automatisch geändert.
+
+An einem Port im Modus DI oder DO steht anschließend die Auswahl **Digitales Gerät** bereit. Gerät auswählen und **Portzuweisung speichern** anklicken. Alternativ öffnet **Digitales Gerät anlegen** am Port direkt den passenden Editor. Ein Gerätetyp kann mehreren Ports zugeordnet werden; Bezeichnung, Standort und Zweck bleiben je Port individuell.
+
+Die Zuordnung ergänzt Darstellung und Geräteinformationen. Eingangszustände und Ausgangsrückmeldung kommen weiterhin vom Master. Sie ändert weder Portmodus noch Ausgangszustand und erzeugt keine zusätzlichen Prozesswert-Entitäten. Bestehende Geräte- und Entitäts-IDs bleiben erhalten. Die IO-Link-Profilzuordnung wird separat aufbewahrt und beim Wechsel zurück zu IO-Link wieder verwendet.
+
+## IO-Link-Profile
+
 Ein Profil ist eine JSON-Datenbeschreibung. Es wird weder mit `eval` noch als Python oder JavaScript ausgeführt. Geräteinformationen und Übersetzung gelten für den Gerätetyp; Standort, Bezeichnung und Zweck lassen sich je angeschlossenem Port überschreiben.
 
 ```json

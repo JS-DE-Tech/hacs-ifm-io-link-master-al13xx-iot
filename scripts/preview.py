@@ -31,6 +31,9 @@ for model, count, identifier in [("AL1350", 4, "demo4"), ("AL1352", 8, "demo8")]
         raw = "408D8DEF419E7EE87DB48E52474F27C6474F27B90010" if port == 1 else "4E5C0100" if port == 4 else "08980101"
         ports[str(port)] = {
             "port": port,
+            "mode": 2 if port == 5 else 1 if port == 6 else 3,
+            "pin4": False,
+            "pin2": False,
             "identity": {
                 "productname": profile["model"] if profile else "",
                 "vendorid": profile["match"][0]["vendorid"] if profile else 0,
@@ -180,7 +183,9 @@ class Handler(BaseHTTPRequestHandler):
             elif command == "assign":
                 master = next(m for m in masters if m["entry_id"] == msg["entry_id"])
                 port = master["ports"][str(msg["port"])]
-                port["assignment"] = {k: msg[k] for k in ("name", "purpose", "location", "profile")}
+                port["assignment"] = {**port["assignment"], **{
+                    k: msg[k] for k in ("name", "purpose", "location", "profile", "digital_profile") if k in msg
+                }}
                 port["profile"] = msg["profile"]
             else:
                 raise ValueError("unknown command")

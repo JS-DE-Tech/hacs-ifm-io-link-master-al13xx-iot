@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.1.5 – Masteraustausch, AL1352 und eigene digitale Geräte (2026-10-16)
+
+Reguläres Release. Der AL1350→AL1352-Austausch wurde an realer Hardware unter HA 2026.9.4 abgeschlossen und nachgeprüft. Alle bisherigen 69 Entitätsidentitäten und 10 Geräteidentitäten blieben erhalten; zusätzliche Ports erweiterten den Bestand auf 85 Entitäten und 14 Geräte.
+
+### Eigene digitale Geräte
+
+- Profil-IDs neuer Geräte werden automatisch aus dem Gerätenamen erzeugt, einschließlich Umlauten und eindeutigen Nummern bei gleichen Namen. Gespeicherte und manuell festgelegte IDs bleiben beim Umbenennen erhalten.
+- Gerätebibliothek um „Digitales Gerät (DI / DO)“ mit Name, Hersteller, Modell, Beschreibung und Bild-Upload erweitert; keine JSON- oder IODD-Eingabe nötig.
+- Separate digitale Gerätezuordnung für DI-/DO-Ports. Bestehende IO-Link-Profile bleiben bei Moduswechseln gespeichert; Schalt-/Eingangszustände kommen unverändert vom Master.
+- Vorhandene digitale Entitäts- und Geräte-IDs bleiben erhalten. Zugewiesene digitale Geräte können bearbeitet, aber nicht versehentlich aus der Bibliothek gelöscht werden.
+
+### Masteraustausch
+
+- Nachprüfung: durchgängiger Hintergrundauftrag nach einer Bestätigung, begrenztes Wiederverbinden, Rücksicherung und abschließende HA-Verbindungsprüfung; Browser kann geschlossen werden.
+- Wiederanlauf mit gespeichertem Neustartzustand, kein Überspringen der Rücksicherung, Schutz vor konkurrierender Übernahme und Verlust der ursprünglichen Sicherung.
+- 423 Python-Tests plus Frontend-Ablauftests; Austauschdialog bleibt bei laufenden Aktualisierungen erhalten.
+
+- Austauschassistent unter „Master verwalten“: AL1350 durch AL1350/AL1352 ersetzen, ohne vorhandene Geräte-/Entitäts-IDs, Profilzuordnungen oder Parametersicherungen neu anzulegen.
+- Netzwerksuche, Sicherung lesbarer Masterwerte, statische IP-Übernahme mit dokumentiertem Neustartverhalten und Identitätsprüfung an der Ziel-IP.
+- Geprüfte Rücksicherung von Portmodi, Application Tag und lesbaren LR-Agent-Einstellungen; DO-Ports zunächst deaktiviert. Keine automatische Sensorparameter-Wiederherstellung.
+- Persistentes Fortschrittsprotokoll, keine automatische Wiederholung unklarer Schreibzugriffe; Verwaltung auch bei offline befindlichem bisherigen Master.
+- Umfang, Ablauf und Verifikationsgrenzen: [Masteraustausch](docs/master-replacement.md). Bei der realen Übernahme bestätigte Antwort 233 das Neuladen der Netzwerkschnittstelle; der separate Reboot-Pfad und Wiederanlauf nach Fehlern sind automatisiert simuliert. Kein elektrischer Lasttest und kein DI-High-Test.
+- Deutsche und englische README aktualisiert, mit neuen Screenshots des AL1352, digitaler Portzuordnung, Gerätebibliothek und Masterverwaltung.
+
 ## v0.1.4 – Portmodi, digitale Ein-/Ausgänge und HA-Kompatibilität
 
 - Portmodus direkt im Command Center wählen: DO, IO-Link, DI oder Disabled; mit Bestätigung und Rücklesen vom Master. Beschriftung: „Portmodus“ / „Portmodus aktivieren“.

@@ -23,7 +23,7 @@ def fixture():
         state["output"] = "01" if on else "00"
 
     coordinator = SimpleNamespace(
-        identity=identity, entry=SimpleNamespace(entry_id="entry"), last_update_success=True,
+        identity=identity, entry=SimpleNamespace(entry_id="entry", data={}), last_update_success=True,
         data={"1": {"mode": 2, "pin4": False}},
         client=SimpleNamespace(identify=AsyncMock(return_value=dict(identity)), multi=multi, write_port_output=write),
     )

@@ -45,6 +45,8 @@ async def set_output(hass, coordinator, port, on):
             raise ValueError("Master nicht verfügbar oder neu geladen")
 
     current()
+    if coordinator.entry.data.get("replacement_paused"):
+        raise ValueError("Masteraustausch vorbereitet")
     if key in busy:
         raise ValueError("Aktion an diesem Port läuft bereits")
     busy.add(key)

@@ -86,7 +86,22 @@ class IfmClient:
             {"newvalue": "01" if on else "00"}, empty_response=True,
         )
 
-    async def _request(self, adr, data=None, empty_response=False):
+    async def write_network(self, values):
+        from .replacement_network import validate_network
+
+        values = validate_network(values)
+        return await self._request("/iotsetup/network/setblock", {"datatoset": values}, network_response=True)
+
+    async def reboot(self):
+        return await self._request("/firmware/reboot", empty_response=True)
+
+    async def write_master_setting(self, path, value):
+        from .replacement_network import validate_setting
+
+        validate_setting(path, value)
+        return await self._request(path + "/setdata", {"newvalue": value, "duration": "lifetime"}, empty_response=True)
+
+    async def _request(self, adr, data=None, empty_response=False, network_response=False):
         body = {"code": "request", "cid": 1, "adr": adr}
         if data is not None:
             body["data"] = data
@@ -123,6 +138,8 @@ class IfmClient:
             raise IfmError("Ungültige IoT-Antwort")
         if payload.get("code") in (401, 403):
             raise IfmAuthError("IoT-Zugriff verweigert")
+        if network_response and payload.get("code") in (200, 230, 233) and payload.get("data") in (None, {}):
+            return payload["code"]
         if empty_response and payload.get("code") == 200 and payload.get("data") in (None, {}):
             return {}
         if payload.get("code") != 200 or not isinstance(payload.get("data"), dict):

@@ -27,7 +27,32 @@ Im grafischen Command Center steht der Master in der Mitte. Seine Ports führen 
 
 <p align="center"><a href="#funktionen">Funktionen</a> · <a href="#mein-praxisprojekt">Praxisprojekt</a> · <a href="#installation">Installation</a> · <a href="#parametersicherung--sensortausch">Parametersicherung</a> · <a href="#eigene-ger%C3%A4te--iodd-import">Eigene Geräte</a></p>
 
-> **Stand 0.1.3:** Erste öffentliche Testversion. AL1350, PN7094, PN7096 und BADU FlowSonic Plus wurden an einer realen Anlage mit Home Assistant 2026.8.3 geprüft. AL1352 wird im Code unterstützt, ist aber noch nicht an realer Hardware getestet. Die Oberfläche des Command Centers ist derzeit deutsch.
+> **Stand 0.1.5:** Reguläres Release. AL1350 und AL1352 sowie der Masteraustausch wurden an einer realen Anlage mit Home Assistant 2026.9.4 geprüft. PN7094, PN7096 und BADU FlowSonic Plus liefern reale Messwerte. Die Oberfläche ist derzeit deutsch. [Prüfumfang und Grenzen](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/validation.md)
+
+## Neu in v0.1.5
+
+**AL1352 mit acht Ports in der Praxis:** Die Garage wurde vom AL1350 auf einen AL1352 umgestellt. Die Übersicht zeigt IO-Link-Sensoren und Digitalausgänge gemeinsam, einschließlich eigener Ventilbilder und der vom Master zurückgelesenen Zustände.
+
+![AL1352: acht Ports mit IO-Link-Sensoren und Digitalausgängen](https://raw.githubusercontent.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/main/docs/images/screenshots/al1352-overview.png)
+
+**Digitale Geräte ohne JSON oder IODD:** Unter **Gerätebibliothek → Eigenes Gerät** den Typ **Digitales Gerät (DI / DO)** wählen, Namen und Bild ergänzen und speichern. Die Profil-ID entsteht automatisch aus dem Namen; bei gleichen Namen wird eine Nummer ergänzt. Gespeicherte IDs bleiben beim Umbenennen unverändert. Derselbe Gerätetyp lässt sich mehreren DI-/DO-Ports zuweisen, mit eigener Bezeichnung und eigenem Standort je Port. Die IO-Link-Zuordnung bleibt für einen späteren Moduswechsel erhalten.
+
+![Digitalgeräte-Editor mit Bild, Beschreibung und Profil-ID](https://raw.githubusercontent.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/main/docs/images/screenshots/digital-device-editor.png)
+
+**Portmodus und Rückmeldung im Blick:** DO, IO-Link, DI oder Disabled direkt am Port auswählen und über **Portmodus aktivieren** bestätigen. Kompakte Statusfelder zeigen IO-Link-Verbindung, DI1, DI2 und DO; das DO-Feld ist anklickbar. DO liefert einen HA-Schalter mit Master-Rückmeldung, DI liefert Binärsensoren. Unpassende Entitäten werden je Modus deaktiviert und mit denselben IDs wieder aktiviert. Die DO-Rückmeldung bestätigt den Masterwert, nicht die mechanische Reaktion eines Ventils oder Schützes. [Digital-I/O](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/digital-io.md)
+
+<details>
+<summary>Screenshot: Digitalausgang mit zugeordnetem Gerät</summary>
+
+![Digitalausgang mit Gerätebild und Kanalstatus](https://raw.githubusercontent.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/main/docs/images/screenshots/digital-port-device.png)
+
+</details>
+
+**Master ersetzen oder erweitern:** Unter **Master verwalten → Master ersetzen / erweitern** Einstellungen sichern, bisherigen Master trennen und Ersatzmaster suchen und prüfen. Nach Bestätigung überträgt der Assistent die unterstützten statischen Netzwerkwerte, prüft die neue Verbindung und sichert die unterstützte Konfiguration zurück. Bestehende Geräte- und Entitäts-IDs, Portzuordnungen, Namen und Parametersicherungen bleiben erhalten. Zusätzliche Ports werden ergänzt. Gesicherte DO-Ports bleiben zunächst deaktiviert; Sensorparameter werden bei Bedarf separat geprüft zurückgespielt. [Ablauf und Grenzen](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/master-replacement.md)
+
+![Masterverwaltung mit Einstieg zum Austauschassistenten](https://raw.githubusercontent.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/main/docs/images/screenshots/master-replacement.png)
+
+Die Screenshots stammen aus der laufenden Anlage während der Entwicklung von v0.1.5; daher zeigt ihre Fußzeile noch eine Entwicklungsversion.
 
 ## Funktionen
 
@@ -45,7 +70,7 @@ Im grafischen Command Center steht der Master in der Mitte. Seine Ports führen 
 | **Sichern und wiederherstellen** | Parametersicherung am Port, JSON-Export/-Import, geprüfte Vorschau und Protokoll des Wiederherstellungsversuchs. |
 | **Home-Assistant-Entitäten** | Sensoren und binäre Sensoren für Messwerte und Zustände; damit eigene Diagramme, Meldungen und Automationen erstellen. |
 
-Die laufende Messwerterfassung liest die Geräte. **Schreibzugriffe erfolgen bei einer ausdrücklich bestätigten Parameterwiederherstellung sowie beim Schalten eines Digitalausgangs und nach Bestätigung einer Portmodusänderung.** Master-Netzwerkeinstellungen werden nicht verändert. Der lokale Entwicklungsstand unterstützt die Auswahl von DO, IO-Link, DI und Disabled sowie DO-Rückmeldung und DI-Binärsensoren; siehe [Digital-I/O](docs/digital-io.md).
+Die laufende Messwerterfassung liest die Geräte. **Schreibzugriffe erfolgen bei bestätigter Parameterwiederherstellung, beim Schalten eines Digitalausgangs, nach Bestätigung einer Portmodusänderung und im ausdrücklich bestätigten Masteraustausch.** Nur der Austauschassistent überträgt unterstützte Master-Netzwerkeinstellungen.
 
 Im noch unveröffentlichten Entwicklungsstand lassen sich bereits als DO konfigurierte Ports über HA-Schalter und EIN/AUS-Tasten im Command Center bedienen. Zwei Anzeigen je Kanal zeigen Pin 2 und Pin 4/IO-Link; fehlende Daten bleiben unbekannt. [Funktionsumfang und Prüfgrenzen](docs/digital-io.md).
 
@@ -114,7 +139,7 @@ Der abgebildete Splitter trägt die Modellbezeichnung **POE-SP02BT-POE** und bie
 | Gerät | Umfang | Erprobung |
 |---|---|---|
 | **ifm AL1350** | IoT-Master mit vier IO-Link-Ports | Zwei reale Master getestet |
-| **ifm AL1352** | IoT-Master mit acht IO-Link-Ports | Implementiert; Hardwaretest ausstehend |
+| **ifm AL1352** | IoT-Master mit acht IO-Link-Ports | Reale Anlage und AL1350→AL1352-Austausch geprüft |
 | **ifm PN7094** | Druck, Gerätestatus, OUT1/OUT2; Profile für Default und Status B | Status B an realen Sensoren geprüft |
 | **ifm PN7096** | Druck, Gerätestatus, OUT1/OUT2; Profile für Default und Status B | Status B an realen Sensoren geprüft |
 | **Speck BADU FlowSonic Plus** | Durchfluss, Temperatur, zwei Summenzähler und Zustandsflags | Reale Messwerte und Node-RED-Zuordnung geprüft |
@@ -146,7 +171,7 @@ Den Ordner `custom_components/ifm_iolink` aus diesem Repository oder dem Release
 5. Gerätebezeichnung, Standort und Verwendungszweck eintragen und speichern.
 6. Die erzeugten Entitäten für eigene Dashboards und Automationen verwenden.
 
-**Voraussetzungen:** Home Assistant ab 2025.7 als Mindestzielversion, erreichbarer IoT Core und passend konfigurierte IO-Link-Ports. Getestet wurde mit Home Assistant 2026.8.3. Lokale Integrationslogos werden ab HA 2026.3 unterstützt. Verwaltung im Command Center benötigt Administratorrechte. Netzsuche arbeitet innerhalb erreichbarer privater IPv4-Netze; bei VLANs kann die manuelle Adresse genutzt werden. Passwortzugriffe auf den Master erfordern HTTPS.
+**Voraussetzungen:** Home Assistant ab 2025.7 als Mindestzielversion, erreichbarer IoT Core und passend konfigurierte IO-Link-Ports. Der aktuelle Stand wurde mit Home Assistant 2026.9.4 geprüft; die Mindestversion wird zusätzlich mit Testdoubles abgedeckt. Lokale Integrationslogos werden ab HA 2026.3 unterstützt. Verwaltung im Command Center benötigt Administratorrechte. Netzsuche arbeitet innerhalb erreichbarer privater IPv4-Netze; bei VLANs kann die manuelle Adresse genutzt werden. Passwortzugriffe auf den Master erfordern HTTPS.
 
 ## Parametersicherung & Sensortausch
 
@@ -182,11 +207,14 @@ python -m pytest -q
 python -m ruff check custom_components tests scripts
 python -m compileall -q custom_components
 node --check custom_components/ifm_iolink/frontend/panel.js
+node tests/test_panel_digital.cjs
+node tests/test_panel_devices.cjs
+node tests/test_panel_replacement.cjs
 ```
 
 Mit `python scripts/preview.py` startet eine lokale Oberflächen-Demo unter `http://127.0.0.1:8765/`. Sie arbeitet ausschließlich mit Beispielwerten. Das Installationspaket erstellt `python scripts/package.py`.
 
-**150 automatisierte Tests** decken unter anderem Dekodierung, IODD-Import, API-Fehler und Wiederherstellungsprüfungen ab. Eine Wiederherstellung ohne Wertänderungen wurde an einem realen PN7094 geprüft; tatsächliche Änderungen und Fehlerfälle wurden bislang simuliert. [Prüfumfang](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/validation.md)
+**423 automatisierte Python-Tests und drei JavaScript-Prüfprogramme** decken unter anderem Dekodierung, IODD-Import, API-Fehler und Wiederherstellungsprüfungen ab. Eine Wiederherstellung ohne Wertänderungen wurde an einem realen PN7094 geprüft; tatsächliche Änderungen und Fehlerfälle wurden bislang simuliert. [Prüfumfang](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/validation.md)
 
 Fehler, Erfahrungen mit dem AL1352 und neue Sensorprofile sind als [GitHub-Issue](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/issues) willkommen. Bitte Modell, Firmware, Integrationsversion und den beobachteten Fehler nennen. Debug-Dateien und Sicherungen vor dem öffentlichen Hochladen auf private Bezeichnungen, Seriennummern und sonstige anlagenspezifische Angaben prüfen.
 

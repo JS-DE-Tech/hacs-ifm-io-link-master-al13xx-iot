@@ -1,4 +1,24 @@
-# Prüfstand der öffentlichen Testversion 0.1.3
+# Prüfstand v0.1.5
+
+Stand: 16.10.2026. Reguläres Release mit 423 erfolgreichen Python-Tests, drei JavaScript-Prüfprogrammen, Ruff, Python-Kompilierung und JavaScript-Syntaxprüfung. Automatisiert geprüft sind zusätzlich Portmodi, digitale Entitätsverwaltung, Masteraustausch mit Wiederaufnahme, stabile Registry-Identitäten, digitale Geräteprofile und automatische Profil-IDs (Umlaute, Namenskollisionen, Längenlimit und Erhalt gespeicherter/manueller IDs).
+
+## Aktuelle reale Prüfung
+
+- HA 2026.9.4: AL1350 und AL1352 verbunden, Prozesswerte und Bedienoberfläche geprüft.
+- AL1350→AL1352-Austausch mit Netzwerkübernahme abgeschlossen; Antwort 233 und Neuladen der Netzwerkschnittstelle protokolliert. Vier ursprüngliche Portmodi und vier Zusatzwerte zurückgelesen.
+- Alle 69 ursprünglichen Entitätsidentitäten und 10 Geräteidentitäten erhalten, mit zusätzlichen Ports auf 85 Entitäten und 14 Geräte erweitert. Beim anschließenden Update blieben alle 85/14 Identitäten sowie die Config-Entry-Daten und Optionen unverändert.
+- Digitale Geräte mit Bild in der Bibliothek und an DO-Ports sichtbar; automatische Profil-ID in der laufenden HA-Oberfläche geprüft. Anlegen und DI-/DO-Zuordnung zusätzlich im lokalen Browser-Demoablauf geprüft.
+- HA-Mindestversion bleibt 2025.7; Registry-/Lifecycle-Tests berücksichtigen HA 2025.7 und 2026.9 mit Testdoubles. Kein vollständiger Core-Testlauf auf HA 2025.7.
+
+## Grenzen
+
+Kein elektrischer Last-/Schütztest, kein DI-High-Test und keine unabhängige Kalibrierung der Messwerte. Der separate Firmware-Reboot nach Antwort 230 sowie Netzwerkfehler und Wiederanlauf wurden simuliert; der reale Austausch nutzte Antwort 233. Eine vollständige Abfrage sämtlicher aktiver HA-Entitätszustände war nicht Teil der erfolgreichen Nachprüfung. Die nachfolgend dokumentierten Sensorparameter-Tests bleiben in ihrem jeweiligen Umfang gültig.
+
+Details: [Masteraustausch](master-replacement.md), [Digital-I/O](digital-io.md), [Geräteprofile](device-profiles.md).
+
+---
+
+# Historischer Prüfstand der Testversion 0.1.3
 
 ## Automatisierte Prüfungen
 

@@ -123,3 +123,17 @@ def test_reject_unsafe_images(image):
     p["image"] = image
     with pytest.raises(ValueError):
         validate_profile(p)
+@pytest.mark.parametrize("image", ["", "/local/relay.png", "data:image/png;base64,aGVsbG8="])
+def test_digital_device_needs_no_process_layout(image):
+    profile = {"id": "custom_relay", "kind": "digital", "name": "Schütz",
+               "image": image, "length": 0, "fields": []}
+    assert validate_profile(profile, custom=True) == profile
+
+
+@pytest.mark.parametrize("extra", [{"length": 1}, {"fields": [{"key": "value"}]},
+                                  {"parameters": [{}]}, {"conditions": [{}]}, {"match": [{}]},
+                                  {"kind": "script"}, {"image": "javascript:alert(1)"}])
+def test_digital_device_rejects_process_commands_and_unsafe_images(extra):
+    with pytest.raises(ValueError):
+        validate_profile({"id": "custom_relay", "kind": "digital", "name": "Schütz",
+                          "length": 0, "fields": [], **extra}, custom=True)

@@ -4,6 +4,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .replacement import registry_serial
 
 
 class IfmEntity(CoordinatorEntity):
@@ -16,12 +17,16 @@ class IfmEntity(CoordinatorEntity):
         assignment = coordinator.entry.options.get("ports", {}).get(self.port, {})
         self.profile_id = assignment.get("profile", "unknown")
         profile = coordinator.library.all.get(self.profile_id, {})
-        serial = coordinator.identity["serial"]
+        # Decorative DI/DO metadata never participates in entity unique IDs.
+        if (coordinator.data or {}).get(self.port, {}).get("mode") in (1, 2):
+            profile = coordinator.library.all.get(assignment.get("digital_profile"), {})
+        serial = registry_serial(coordinator.entry)
         suffix = f"{self.profile_id}_{field['key']}" if field else kind
         self._attr_unique_id = f"{serial}_port_{port}_{suffix}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{serial}_port_{port}")},
-            name=assignment.get("name") or f"{coordinator.entry.title} · Port {port}",
+            name=assignment.get("name") or (profile.get("name") if profile.get("kind") == "digital" else None)
+            or f"{coordinator.entry.title} · Port {port}",
             manufacturer=profile.get("manufacturer") or "IO-Link",
             model=profile.get("model") or "Unbekannt",
             suggested_area=assignment.get("location") or None,

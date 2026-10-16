@@ -15,6 +15,7 @@ from .coordinator import IfmCoordinator
 from .mode_entities import sync_mode_entities
 from .parameters import ParameterBackups
 from .profiles import ProfileLibrary
+from .replacement import registry_serial
 from .version import installed_version
 
 
@@ -50,19 +51,41 @@ async def async_setup_entry(hass, entry):
         entry.data.get("password", ""),
         entry.data.get("verify_ssl", True),
     )
+    stored_identity = {key: entry.data[key] for key in ("serial", "model", "ports") if key in entry.data}
+    paused = entry.data.get("replacement_paused", False)
+    mismatch = None
     try:
-        identity = await client.identify()
+        identity = stored_identity if paused else await client.identify()
+        if (identity["serial"] != entry.unique_id
+                or identity["model"] != stored_identity.get("model", identity["model"])):
+            if not all(key in stored_identity for key in ("serial", "model", "ports")):
+                raise ConfigEntryNotReady("Unter dieser Adresse antwortet ein anderer Master")
+            mismatch, identity = identity, stored_identity
     except IfmError as err:
-        raise ConfigEntryNotReady(str(err)) from err
-    if identity["serial"] != entry.unique_id:
-        raise ConfigEntryNotReady("Unter dieser Adresse antwortet ein anderer Master (Seriennummer geändert)")
+        if not all(key in stored_identity for key in ("serial", "model", "ports")):
+            raise ConfigEntryNotReady(str(err)) from err
+        identity = stored_identity
+        paused = True  # Keep management available while the old master is offline.
     coordinator = IfmCoordinator(hass, entry, client, identity, hass.data[DOMAIN]["library"])
-    await coordinator.async_config_entry_first_refresh()
+    coordinator.replacement_detected = mismatch
+    if paused or mismatch:
+        coordinator.async_set_updated_data({})
+        coordinator.last_update_success = False
+    else:
+        try:
+            await coordinator.async_config_entry_first_refresh()
+        except ConfigEntryNotReady:
+            if not all(key in stored_identity for key in ("serial", "model", "ports")):
+                raise
+            # Identification may succeed just before the old master disconnects.
+            # Existing installations must still expose the replacement manager.
+            coordinator.async_set_updated_data({})
+            coordinator.last_update_success = False
     entry.runtime_data = coordinator
     hass.data[DOMAIN]["coordinators"][entry.entry_id] = coordinator
     master_device = dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
-        identifiers={(DOMAIN, identity["serial"])},
+        identifiers={(DOMAIN, registry_serial(entry))},
         manufacturer="ifm electronic",
         model=identity["model"],
         name=entry.title,
@@ -76,7 +99,7 @@ async def async_setup_entry(hass, entry):
     expected = set()
     requirements = {}
     for port in range(1, identity["ports"] + 1):
-        prefix = f"{identity['serial']}_port_{port}_"
+        prefix = f"{registry_serial(entry)}_port_{port}_"
         requirements[prefix + "connection"] = (port, 3)
         requirements[prefix + "pin4_do"] = (port, 2)
         requirements[prefix + "pin4_di"] = (port, 1)

@@ -48,7 +48,7 @@ def instance(module, condition_value=0):
     profile["conditions"] = [{"index": 64, "value": 0}]
     library = SimpleNamespace(all={"pn7096": profile}, suggest=lambda identity: ["pn7096"])
     entry = SimpleNamespace(
-        entry_id="entry",
+        entry_id="entry", data={},
         title="PRIVATE LOCATION",
         options={"ports": {"1": {"profile": "pn7096"}, "2": {"profile": "pn7096"}}},
     )
@@ -60,7 +60,8 @@ def instance(module, condition_value=0):
         async def multi(self, paths):
             if self.fail:
                 raise IfmError("network unavailable")
-            result = {}
+            result = {"/deviceinfo/productcode": {"code": 200, "data": "AL1350"},
+                      "/deviceinfo/serialnumber": {"code": 200, "data": "PRIVATE MASTER"}}
             for port in (1, 2):
                 for name, value in {
                     "pdin": "08980101" if port == 1 else "BAD",
@@ -153,3 +154,30 @@ def test_diagnostics_redact_identity_and_bound_history(coordinator_module):
     result = c.diagnostic(1)
     assert len(result["ports"]["1"]["samples"]) == 30
     assert "PRIVATE" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("serial,model", [("OTHER", "AL1350"), ("PRIVATE MASTER", "AL1352"), (None, "AL1350")])
+def test_replaced_master_never_publishes_old_assignments(coordinator_module, serial, model):
+    c, client = instance(coordinator_module)
+    original = client.multi
+    async def multi(paths):
+        result = await original(paths)
+        result["/deviceinfo/serialnumber"] = {"code": 200, "data": serial}
+        result["/deviceinfo/productcode"] = {"code": 200, "data": model}
+        return result
+    client.multi = multi
+    with pytest.raises(coordinator_module.UpdateFailed):
+        asyncio.run(c._async_update_data())
+    assert all(not items for items in c.samples.values())
+    if serial:
+        assert c.replacement_detected == {"model": model, "serial": serial}
+
+
+def test_prepared_replacement_does_not_poll_hardware(coordinator_module):
+    c, client = instance(coordinator_module)
+    c.entry.data["replacement_paused"] = True
+    async def forbidden(paths):
+        raise AssertionError("No I/O while paused")
+    client.multi = forbidden
+    with pytest.raises(coordinator_module.UpdateFailed, match="pausiert"):
+        asyncio.run(c._async_update_data())

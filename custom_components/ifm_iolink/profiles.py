@@ -40,6 +40,9 @@ class ProfileLibrary:
     async def save(self, profile):
         validate_profile(profile, custom=True)
         async with self.lock:
+            existing = self.all.get(profile["id"])
+            if existing and existing.get("kind", "iolink") != profile.get("kind", "iolink"):
+                raise ValueError("Für einen anderen Gerätetyp bitte ein neues Gerät anlegen")
             updated = {**self.custom, profile["id"]: profile}
             if len(updated) > 100:
                 raise ValueError("Maximal 100 eigene Profile")

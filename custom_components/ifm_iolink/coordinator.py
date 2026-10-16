@@ -26,6 +26,7 @@ class IfmCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=entry.options.get("interval", DEFAULT_INTERVAL)),
         )
         self.entry, self.client, self.identity, self.library = entry, client, identity, library
+        self.replacement_detected = None
         self.metadata = {}
         self.metadata_at = None
         self.condition_values = {}
@@ -33,7 +34,9 @@ class IfmCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         refresh_metadata = self.metadata_at is None or time.monotonic() - self.metadata_at >= 60
-        paths = []
+        if self.entry.data.get("replacement_paused"):
+            raise UpdateFailed("Masteraustausch vorbereitet; Verarbeitung pausiert")
+        paths = ["/deviceinfo/productcode", "/deviceinfo/serialnumber"]
         for port in range(1, self.identity["ports"] + 1):
             paths.extend(port_path(port, name) for name in ("pdin", "status"))
             paths.extend((f"/iolinkmaster/port[{port}]/mode", f"/iolinkmaster/port[{port}]/pin2in"))
@@ -44,6 +47,14 @@ class IfmCoordinator(DataUpdateCoordinator):
             response = await self.client.multi(paths)
         except IfmError as err:
             raise UpdateFailed(str(err)) from err
+        model = data_value(response, "/deviceinfo/productcode")
+        serial = data_value(response, "/deviceinfo/serialnumber")
+        if not model or not serial:
+            raise UpdateFailed("Master-Identität nicht lesbar")
+        if model != self.identity["model"] or serial != self.identity["serial"]:
+            self.replacement_detected = {"model": model, "serial": serial}
+            raise UpdateFailed("Anderer Master erkannt – Austausch bestätigen")
+        self.replacement_detected = None
         now = dt_util.utcnow().isoformat()
         result = {}
         for port in range(1, self.identity["ports"] + 1):
@@ -122,6 +133,9 @@ class IfmCoordinator(DataUpdateCoordinator):
         return {
             "entry_id": self.entry.entry_id,
             "name": self.entry.title,
+            "url": self.client.url,
+            "replacement_paused": self.entry.data.get("replacement_paused", False),
+            "replacement_detected": self.replacement_detected,
             "identity": self.identity,
             "online": self.last_update_success,
             "interval": self.entry.options.get("interval", DEFAULT_INTERVAL),

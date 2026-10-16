@@ -33,6 +33,10 @@ class IfmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.found = {}
         self.defaults = {}
 
+    def _reserved_serial(self, serial):
+        return any(entry.data.get("registry_serial") == serial
+                   for entry in self.hass.config_entries.async_entries(DOMAIN))
+
     async def async_step_user(self, user_input=None):
         return self.async_show_menu(step_id="user", menu_options=["manual", "scan"])
 
@@ -49,6 +53,8 @@ class IfmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     user_input.get("verify_ssl", True),
                 )
                 identity = await client.identify()
+                if self._reserved_serial(identity["serial"]):
+                    return self.async_abort(reason="already_configured")
                 await self.async_set_unique_id(identity["serial"])
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
@@ -107,6 +113,8 @@ class IfmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             identity = await IfmClient(async_get_clientsession(self.hass), self.defaults["url"]).identify()
         except IfmError:
             return self.async_abort(reason="cannot_connect")
+        if self._reserved_serial(identity["serial"]):
+            return self.async_abort(reason="already_configured")
         await self.async_set_unique_id(identity["serial"])
         self._abort_if_unique_id_configured()
         self.defaults["name"] = identity["model"]

@@ -23,6 +23,30 @@ async def serve(handler, test):
         await runner.cleanup()
 
 
+@pytest.mark.parametrize("code", [200, 230, 233, 231, 500])
+def test_network_block_status_is_not_accepted_for_other_writes(code):
+    from custom_components.ifm_iolink.replacement_network import NETWORK_KEYS
+
+    values = dict(zip(NETWORK_KEYS, [0, "10.100.1.241", "255.255.252.0", "10.100.0.1"], strict=True))
+    async def handler(request):
+        body = await request.json()
+        if body["adr"] == "/iotsetup/network/setblock":
+            assert body["data"] == {"datatoset": values}
+        return web.json_response({"code": code})
+    async def check(client):
+        if code in (200, 230, 233):
+            assert await client.write_network(values) == code
+        else:
+            with pytest.raises(IfmError):
+                await client.write_network(values)
+        if code != 200:
+            with pytest.raises(IfmError):
+                await client.write_port_mode(4, 0)
+            with pytest.raises(IfmError):
+                await client.reboot()
+    asyncio.run(serve(handler, check))
+
+
 def test_identification_uses_deviceinfo_and_accepts_al1352():
     async def handler(request):
         body = await request.json()

@@ -1,6 +1,6 @@
 # Digitalausgänge und Kanalstatus
 
-Lokaler Entwicklungsstand, noch nicht veröffentlicht oder auf Home Assistant installiert.
+Seit v0.1.4 enthalten; mit v0.1.5 um digitale Geräteprofile erweitert und auf HA 2026.9.4 eingesetzt.
 Ausgehend von 100prznts Digitalausgangsfunktion wurde der Schreibpfad neu abgesichert.
 
 ## Bedienung
@@ -13,13 +13,13 @@ Die Verfügbarkeit hängt vom gelesenen Hardwaremodus ab, nicht von einer gespei
 Profilzuordnung. Bei unbekanntem Ausgangswert bleibt der Zustand unbekannt;
 ein expliziter EIN/AUS-Befehl ist bei bestätigtem DO-Modus weiterhin möglich.
 
-Oberhalb des Geräteprofils lässt sich „Portmodus (Pin 4)“ auf DO, IO-LINK, DI
-oder Disabled stellen. „Portmodus ändern …“ verlangt eine Bestätigung mit Master
+Oberhalb des Geräteprofils lässt sich „Portmodus“ auf DO, IO-LINK, DI
+oder Disabled stellen. „Portmodus aktivieren“ verlangt eine Bestätigung mit Master
 und Port. Erst dann wird geschrieben und zurückgelesen. Ein DO-Moduswechsel
 schreibt anschließend AUS und prüft Modus und Ausgang. Ein impulsfreier Übergang
 ist durch diese getrennten API-Aufrufe nicht garantiert. Bei Teilfehlern den
 aktuellen Zustand prüfen; die Integration wiederholt Schreibzugriffe nicht.
-Profilzuordnungen werden nicht gelöscht. Das Profilfeld ist außerhalb IO-Link gesperrt.
+Profilzuordnungen werden nicht gelöscht. Im DI-/DO-Modus steht eine separate Auswahl eigener digitaler Geräte mit Bild bereit; JSON oder IODD sind dafür nicht nötig. Die IO-Link-Profilzuordnung bleibt erhalten.
 Jeder Port hat außerdem einen Binärsensor „Digitaleingang (Pin 4)“ mit stabiler ID
 `<Master-Seriennummer>_port_<Port>_pin4_di`. DO und DI sind nur im passenden Modus
 verfügbar; bestehende Entitäten werden beim Moduswechsel wiederverwendet.
@@ -42,9 +42,9 @@ aktualisieren sich Anzeige und Verfügbarkeit beim nächsten Poll.
 
 | Anzeige | Bedeutung |
 |---|---|
-| DI2 gelb / EIN | Pin 2 meldet aktiv |
-| DI2 grau / AUS | Pin 2 meldet inaktiv |
-| Pin 4 gelb / EIN bzw. grau / AUS | DI-Modus: Eingang; DO-Modus: gelesener Ausgangswert |
+| DI2 grün / EIN | Pin 2 meldet aktiv |
+| DI2 rot / AUS | Pin 2 meldet inaktiv |
+| Pin 4 grün / EIN bzw. rot / AUS | DI-Modus: Eingang; DO-Modus: gelesener Ausgangswert |
 | Pin 4 grün / IO-Link verbunden | IO-Link-Modus und bestehende Verbindung |
 | Pin 4 deaktiviert | Hardwaremodus 0 |
 | Unbekannt oder nicht erreichbar | Fehlende/ungültige Daten oder verlorene Verbindung |
@@ -98,8 +98,7 @@ freier Port 4, mit den tatsächlichen Integrationsfunktionen (ohne HA-Installati
 | Wiederherstellung | Modus 3 (IO-Link), alle Portmodi wie vor dem Test |
 
 Keine Last angeschlossen: Ausgangsspannung und reale Schützreaktion sind nicht
-geprüft. DI-High, AL1352-Hardware, vollständige HA-Laufzeit und visuelle Browserprüfung
-stehen aus. Keine Installation auf dem produktiven Home Assistant, keine Veröffentlichung.
+geprüft. DI-High bleibt ungetestet. Anschließend auf HA 2026.9.4 installiert und im Browser geprüft. Nach dem realen AL1350→AL1352-Austausch wurden die acht Portmodi sowie DO/AUS an X05–X08 direkt am neuen Master zurückgelesen. Das ist kein elektrischer Lasttest am AL1352.
 
 
 ## Automatische Entitätsverwaltung
@@ -116,5 +115,4 @@ Während dieser Zeit kann die Entität noch nicht verfügbar sein.
 
 Geprüft mit Registry-Testdoubles: Moduswechsel, wiederholte Abfragen,
 persistierte Einträge nach Reload, manuelle Deaktivierung und ID-Erhalt.
-Verwendete Registry-APIs sind in HA 2025.7 vorhanden. Ein echter HA-Lauf
-für diese Erweiterung wurde noch nicht durchgeführt.
+Verwendete Registry-APIs sind in HA 2025.7 vorhanden. Die laufende HA-2026.9.4-Installation wurde nach Austausch und Update überprüft; Geräte- und Entitätsidentitäten blieben erhalten. Einzelne Fehler- und Wechselabläufe sind weiterhin nur durch Testdoubles abgedeckt.

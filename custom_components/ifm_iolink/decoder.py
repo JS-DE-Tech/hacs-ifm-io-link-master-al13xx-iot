@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 
 TYPES = {"uint": None, "int": None, "float32": 4, "float64": 8, "bool": None}
 PROFILE_KEYS = {
+    "kind",
     "id",
     "name",
     "manufacturer",
@@ -81,6 +82,15 @@ def validate_profile(profile: dict, *, custom: bool = False) -> dict:
         raise ValueError("Gerätename fehlt")
     if not safe_image(profile.get("image", "")):
         raise ValueError("Bild: /local/-Pfad, HTTPS-URL oder PNG/JPEG/WebP-Upload erforderlich")
+    kind = profile.get("kind", "iolink")
+    if kind not in ("iolink", "digital"):
+        raise ValueError("Gerätetyp muss iolink oder digital sein")
+    if kind == "digital":
+        if (type(profile.get("length")) is not int or profile["length"] != 0
+                or profile.get("fields") != []
+                or any(profile.get(key, []) != [] for key in ("match", "parameters", "conditions"))):
+            raise ValueError("Digitale Geräte haben keine IO-Link-Prozessdaten oder Parameter")
+        return profile
     _integer(profile.get("length"), 1, 32, "Prozessdatenlänge")
     matches = profile.get("match", [])
     if not isinstance(matches, list) or len(matches) > 32:

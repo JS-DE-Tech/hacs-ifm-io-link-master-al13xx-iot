@@ -18,6 +18,7 @@ from .digital import set_output
 from .iodd import import_iodd
 from .parameters import collect_parameters, read_parameter_value
 from .port_mode import change_mode
+from .replacement import confirm_replacement, pause_replacement, preview_replacement, registry_serial
 from .restore import execute_restore, prepare_restore
 from .version import installed_version
 
@@ -36,6 +37,7 @@ def register_commands(hass):
         read_parameter,
         read_parameters,
         get_parameter_backup,
+        replacement,
         rename_master,
         delete_master,
         preview_restore,
@@ -87,6 +89,8 @@ def coordinator_for(hass, message):
     coordinator = hass.data[DOMAIN]["coordinators"].get(message["entry_id"])
     if coordinator is None:
         raise ValueError("Master wird geladen oder ist nicht erreichbar")
+    if coordinator.entry.data.get("replacement_paused") or getattr(coordinator, "replacement_detected", None):
+        raise ValueError("Masteraustausch offen; Portaktionen sind gesperrt")
     if "port" in message and not 1 <= message["port"] <= coordinator.identity["ports"]:
         raise ValueError("Port existiert an diesem Master nicht")
     return coordinator
@@ -115,6 +119,7 @@ async def snapshot(hass, connection, message):
         vol.Required("entry_id"): str,
         vol.Required("port"): int,
         vol.Required("profile"): str,
+        vol.Optional("digital_profile"): str,
         vol.Optional("name", default=""): str,
         vol.Optional("location", default=""): str,
         vol.Optional("purpose", default=""): str,
@@ -129,12 +134,22 @@ async def assign(hass, connection, message):
             raise ValueError("Parameteraktion läuft; Portzuweisung danach ändern")
         if message["profile"] != "unknown" and message["profile"] not in coordinator.library.all:
             raise ValueError("Profil nicht gefunden")
+        if coordinator.library.all.get(message["profile"], {}).get("kind") == "digital":
+            raise ValueError("Digitales Gerät über die digitale Portzuordnung auswählen")
+        previous = coordinator.entry.options.get("ports", {}).get(str(message["port"]), {})
+        digital_profile = message.get("digital_profile", previous.get("digital_profile", "unknown"))
+        if digital_profile != "unknown" and coordinator.library.all.get(digital_profile, {}).get("kind") != "digital":
+            raise ValueError("Digitales Gerät nicht gefunden")
         for name in ("name", "location", "purpose"):
             if len(message[name]) > 500:
                 raise ValueError("Metadaten dürfen höchstens 500 Zeichen enthalten")
         ports = {
             **coordinator.entry.options.get("ports", {}),
-            str(message["port"]): {key: message[key].strip() for key in ("profile", "name", "location", "purpose")},
+            str(message["port"]): {
+                **previous,
+                **{key: message[key].strip() for key in ("profile", "name", "location", "purpose")},
+                "digital_profile": digital_profile,
+            },
         }
         hass.config_entries.async_update_entry(coordinator.entry, options={**coordinator.entry.options, "ports": ports})
         connection.send_result(message["id"], {"saved": True})
@@ -151,7 +166,8 @@ async def save_profile(hass, connection, message):
         await hass.data[DOMAIN]["library"].save(profile)
         # Reload users of an edited profile so entity metadata and keys match it.
         for entry in hass.config_entries.async_entries(DOMAIN):
-            if any(port.get("profile") == profile["id"] for port in entry.options.get("ports", {}).values()):
+            if any(profile["id"] in (port.get("profile"), port.get("digital_profile"))
+                   for port in entry.options.get("ports", {}).values()):
                 await hass.config_entries.async_reload(entry.entry_id)
         connection.send_result(message["id"], {"saved": True})
     except (ValueError, TypeError) as err:
@@ -206,7 +222,7 @@ async def read_parameter(hass, connection, message):
 async def delete_profile(hass, connection, message):
     try:
         if any(
-            port.get("profile") == message["profile_id"]
+            message["profile_id"] in (port.get("profile"), port.get("digital_profile"))
             for entry in hass.config_entries.async_entries(DOMAIN)
             for port in entry.options.get("ports", {}).values()
         ):
@@ -277,7 +293,7 @@ async def rename_master(hass, connection, message):
         if not name or len(name) > 120:
             raise ValueError("Mastername muss 1 bis 120 Zeichen enthalten")
         registry = dr.async_get(hass)
-        device = registry.async_get_device(identifiers={(DOMAIN, entry.unique_id)})
+        device = registry.async_get_device(identifiers={(DOMAIN, registry_serial(entry))})
         if device:
             registry.async_update_device(device.id, name=name, name_by_user=name)
         hass.config_entries.async_update_entry(entry, title=name)
@@ -469,3 +485,73 @@ async def get_restore_report(hass, connection, message):
         connection.send_result(message["id"], {"report": report})
     except ValueError as err:
         connection.send_error(message["id"], "invalid_input", str(err))
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "ifm_iolink/replacement",
+    vol.Required("entry_id"): str,
+    vol.Required("action"): vol.In(["prepare", "preview", "confirm", "cancel", "search", "status", "network", "verify_network", "restore_modes", "run", "job_status"]),
+    vol.Optional("url", default=""): str,
+    vol.Optional("token", default=""): str,
+    vol.Optional("network", default=""): str,
+    vol.Optional("confirm", default=False): bool,
+})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def replacement(hass, connection, message):
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+    from .api import discover
+    from .replacement_flow import job_status, operation_lock, running_job, start_job
+    from .replacement_network import network_status, restore_modes, store, transfer_network, verify_network
+
+    try:
+        entry = entry_for(hass, message["entry_id"])
+        if message["action"] == "job_status":
+            connection.send_result(message["id"], await job_status(hass, entry))
+            return
+    except (ValueError, OSError) as err:
+        connection.send_error(message["id"], "replacement_failed", str(err))
+        return
+    lock = operation_lock(hass)
+    if lock.locked() or running_job(hass):
+        connection.send_error(message["id"], "busy", "Austauschaktion läuft bereits; Status prüfen")
+        return
+    await lock.acquire()
+    try:
+        entry = entry_for(hass, message["entry_id"])
+        action = message["action"]
+        if action in ("prepare", "confirm", "cancel", "network", "restore_modes", "run") and message["confirm"] is not True:
+            raise ValueError("Austauschaktion muss bestätigt werden")
+        if action == "run":
+            result = start_job(hass, entry, message["token"])
+        elif action == "search":
+            result = {"found": await discover(async_get_clientsession(hass), message["network"])}
+        elif action == "status":
+            result = await network_status(hass, entry)
+        elif action == "network":
+            result = await transfer_network(hass, entry, message["token"])
+        elif action == "verify_network":
+            result = await verify_network(hass, entry)
+        elif action == "restore_modes":
+            result = await restore_modes(hass, entry)
+        elif action == "prepare":
+            await pause_replacement(hass, entry)
+            hass.data[DOMAIN].get("replacement_jobs", {}).pop(entry.entry_id, None)
+            result = {"paused": True}
+        elif action == "preview":
+            result = await preview_replacement(hass, entry, message["url"] or entry.data["url"])
+        elif action == "confirm":
+            result = await confirm_replacement(hass, entry, message["token"])
+        else:
+            backup = await store(hass, entry).async_load()
+            if backup and backup.get("transfer"):
+                raise ValueError("Hardwareübertragung bereits begonnen. Austausch fortsetzen; ein Abbruch würde die Hardware nicht zurücksetzen.")
+            hass.data[DOMAIN].get("replacement_previews", {}).pop(entry.entry_id, None)
+            hass.config_entries.async_update_entry(entry, data={**entry.data, "replacement_paused": False})
+            result = {"cancelled": True}
+        connection.send_result(message["id"], result)
+    except (ValueError, IfmError, OSError) as err:
+        connection.send_error(message["id"], "replacement_failed", str(err))
+    finally:
+        lock.release()
