@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 490" role="img" aria-label="DI-Anschlussentwurf: gemeinsame L-Plus-Abzweigung zu zwei unabhängigen Kontakten; Kontakt 1 an DI1 Pin4, Kontakt2 an DI2 Pin2. Pin3 isoliert.">
+<style>text{font-family:Arial,sans-serif;fill:#243140}.title{font-size:18px;font-weight:700}.sub{font-size:13px;fill:#64748b}.label{font-size:15px;font-weight:600}.small{font-size:12px;fill:#64748b}.pin{font-size:14px;font-weight:700;text-anchor:middle;dominant-baseline:central}</style>
+<rect x="12" y="60" width="218" height="398" rx="16" fill="#fff8ef" stroke="#f1ccaa"/>
+<text x="28" y="30" class="title">ifm IO-Link · Port</text><text x="30" y="88" class="small">PORTMODUS DI</text>
+<text x="460" y="30" class="title">Zwei unabhängige Schaltkontakte</text><text x="460" y="51" class="sub">Potentialfreie Schließer · hier beide offen</text>
+<text x="30" y="144" class="label">L+ · Versorgung</text><text x="30" y="234" class="label">DI1 · Digitaleingang</text><text x="30" y="344" class="label">DI2 · Digitaleingang</text><text x="30" y="434" class="label">L− · 0 V</text>
+<path d="M230 140 H790 V278 M550 140 V168" fill="none" stroke="#955a32" stroke-width="5" stroke-linejoin="round"/><circle cx="550" cy="140" r="7" fill="#955a32"/>
+<text x="290" y="124" class="label">Braun · Pin 1*</text><text x="575" y="124" class="sub">Gemeinsame L+-Abzweigung</text>
+<path d="M550 212 V230 H230" fill="none" stroke="#29313a" stroke-width="5" stroke-linejoin="round"/>
+<path d="M790 322 V340 H230" fill="none" stroke="#9caab8" stroke-width="7" stroke-linejoin="round"/><path d="M790 322 V340 H230" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+<text x="290" y="215" class="label">Schwarz · Pin 4*</text><text x="290" y="325" class="label">Weiß · Pin 2*</text>
+<g fill="#fff" stroke="#435064" stroke-width="2.5"><circle cx="550" cy="168" r="4"/><circle cx="550" cy="212" r="4"/><path d="M550 208 L574 175" fill="none"/><circle cx="790" cy="278" r="4"/><circle cx="790" cy="322" r="4"/><path d="M790 318 L814 285" fill="none"/></g>
+<text x="600" y="183" class="label">Kontakt 1</text><text x="600" y="204" class="sub">schaltet nur DI1</text>
+<text x="625" y="290" class="label">Kontakt 2</text><text x="625" y="311" class="sub">schaltet nur DI2</text>
+<path d="M230 430 H430" stroke="#2786d5" stroke-width="5"/><rect x="424" y="422" width="17" height="16" rx="4" fill="#edf1f5" stroke="#708196"/>
+<text x="290" y="414" class="label">Blau · Pin 3*</text><text x="465" y="425" class="label">Am Kontaktende unbenutzt</text><text x="465" y="446" class="sub">Einzeln isolieren · keine Verbindung zu den Kontakten</text>
+<g fill="#fff" stroke="#d9af8a" stroke-width="1.5"><circle cx="218" cy="140" r="15"/><circle cx="218" cy="230" r="15"/><circle cx="218" cy="340" r="15"/><circle cx="218" cy="430" r="15"/></g>
+<text x="218" y="140" class="pin">1</text><text x="218" y="230" class="pin">4</text><text x="218" y="340" class="pin">2</text><text x="218" y="430" class="pin">3</text>
+<text x="450" y="483" class="small" text-anchor="middle">Funktionsschema · Pin-Nummern, keine Steckeransicht · keine mechanische Kopplung der Kontakte</text></svg>

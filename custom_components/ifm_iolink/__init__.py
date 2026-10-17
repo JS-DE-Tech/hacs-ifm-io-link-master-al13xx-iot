@@ -37,7 +37,7 @@ async def async_setup(hass, config):
         webcomponent_name="ifm-iolink-panel",
         sidebar_title="ifm IO-Link",
         sidebar_icon="mdi:lan-connect",
-        module_url=f"{STATIC_URL}/panel.js?v={installed_version()}",
+        module_url=f"{STATIC_URL}/panel.js?v={installed_version()}&ui=wiring-help-20261017",
         require_admin=True,
     )
     return True

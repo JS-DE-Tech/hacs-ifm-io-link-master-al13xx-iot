@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.6 – Anschlusshilfe für DI und DO (2026-10-17)
+
+Reguläres Release. Die DO-Anschlusshilfe wurde in einer laufenden HA-2026.9.4-Installation am AL1352 sichtbar geprüft und vom Nutzer bestätigt. Die DI-Hilfe wurde lokal einschließlich Mobilansicht getestet und ebenfalls installiert; kein produktiver Port wurde dafür umgeschaltet.
+
+- Fragezeichen an DI-/DO-Portkarten von AL1350/AL1352 öffnet ein modales Anschlussbeispiel mit Grafik und Anschlusstabelle. IO-Link- und deaktivierte Ports erhalten keine Schütz-Anschlusshilfe.
+- DO: Schneider LC1D18BD mit Spulenanschlüssen und separatem DI2-Hilfskontakt. DI: zwei unabhängige potentialfreie Kontakte mit gemeinsamer L+-Abzweigung. Kabelbeispiel Phoenix Contact 1504615.
+- Fachliche Vorbehalte bleiben sichtbar: Farb-Pin-Zuordnung durch Durchgang prüfen; elektrische Eignung des DO-Beispiels noch offen. Die Hilfe sendet keine Hardwarebefehle.
+- Native Dialogbedienung mit Escape, Fokus-Rückgabe und scrollbar lesbarer Grafik auf kleinen Displays.
+- Neue Ladeadresse bei der Panel-Registrierung verhindert, dass unter der unveränderten Integrationsversion noch die vorherige JavaScript-Datei verwendet wird. Die Registrierung wird beim HA-Core-Start erneuert.
+
 ## v0.1.5 – Masteraustausch, AL1352 und eigene digitale Geräte (2026-10-16)
 
 Reguläres Release. Der AL1350→AL1352-Austausch wurde an realer Hardware unter HA 2026.9.4 abgeschlossen und nachgeprüft. Alle bisherigen 69 Entitätsidentitäten und 10 Geräteidentitäten blieben erhalten; zusätzliche Ports erweiterten den Bestand auf 85 Entitäten und 14 Geräte.

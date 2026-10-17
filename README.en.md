@@ -27,7 +27,15 @@ The graphical Command Center places the master at the centre, with connections t
 
 <p align="center"><a href="#features">Features</a> · <a href="#my-real-world-project">My project</a> · <a href="#installation">Installation</a> · <a href="#parameter-backup-and-sensor-replacement">Parameter backups</a> · <a href="#custom-devices-and-iodd-import">Custom devices</a></p>
 
-> **Version 0.1.5:** Regular release. AL1350, AL1352 and master replacement have been verified on a real installation running Home Assistant 2026.9.4. PN7094, PN7096 and BADU FlowSonic Plus provide live measurements. The interface is currently German. [Validation scope and limitations (German)](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/validation.md)
+> **Version 0.1.6:** Regular release. AL1350, AL1352 and master replacement have been verified on a real installation running Home Assistant 2026.9.4. PN7094, PN7096 and BADU FlowSonic Plus provide live measurements. The interface is currently German. [Validation scope and limitations (German)](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/validation.md)
+
+## New in v0.1.6
+
+**Wiring help on each digital port:** A question-mark button on DI/DO cards opens a mode-specific diagram and connection table. DO illustrates a Schneider LC1D18BD contactor with a separate DI2 auxiliary-contact feedback signal; DI shows two independent dry contacts connected to DI1 and DI2. Phoenix Contact 1504615 is the example cable. Opening the help sends no output commands.
+
+![DO wiring help on the AL1352 in the running Home Assistant installation](https://raw.githubusercontent.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/main/docs/images/screenshots/wiring-help-do-live.png)
+
+The diagrams are **wiring proposals**: checks for wire colours, pin assignments and electrical suitability remain visible. The DO dialog was verified in the live installation; DI was tested locally, including a mobile layout. A revised frontend URL ensures the updated interface is loaded. [v0.1.6 release notes](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/releases/tag/v0.1.6)
 
 ## New in v0.1.5
 

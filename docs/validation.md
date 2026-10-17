@@ -1,3 +1,14 @@
+# Prüfstand v0.1.6
+
+Stand: 17.10.2026. Reguläres Release mit Anschlusshilfen für DI-/DO-Ports und korrigierter Frontend-Ladeadresse. 423 Python-Tests und die drei bestehenden JavaScript-Prüfprogramme erfolgreich. Der lokale pytest-Cache war nicht beschreibbar; die Tests selbst bestanden vollständig.
+
+- Live unter HA 2026.9.4: Fragezeichen an den DO-Portkarten X05–X08 des AL1352 sichtbar, Dialog an X05 mit Grafik und Anschlusstabelle geöffnet. Escape schließt ihn und gibt den Fokus an die Hilfe-Schaltfläche zurück. Der Nutzer bestätigte die Funktion.
+- DI: Dialog mit zwei Kontakten lokal in der tatsächlichen Oberfläche geprüft, auch bei 390 Pixel Breite mit horizontal scrollbar lesbarer Grafik. Auf HA installiert, aber dort kein DI-Port umgeschaltet und kein Live-DI-Dialogtest durchgeführt.
+- Ladeproblem eingegrenzt: Der Core lieferte intern bereits die neue Datei, die bisherige öffentliche Moduladresse weiterhin die alte. Eine neue URL-Abfrage lieferte die neue Datei. Nach angepasster Panel-Registrierung, erfolgreichem `ha core check` und ausdrücklich freigegebenem Core-Neustart war die Hilfe live sichtbar. Die genaue zwischenspeichernde Instanz wurde nicht bestimmt.
+- Die Hilfe sendet keine Gerätebefehle. Kein elektrischer Lasttest, keine Schützfreigabe und kein DI-High-Test. Hinweise zur unbestätigten Farb-Pin-Zuordnung und elektrischen Eignung bleiben Teil der Beispiele.
+
+Der nachfolgende Prüfstand dokumentiert frühere Funktionen; seine Hardwareprüfungen wurden für dieses Frontend-Release nicht wiederholt.
+
 # Prüfstand v0.1.5
 
 Stand: 16.10.2026. Reguläres Release mit 423 erfolgreichen Python-Tests, drei JavaScript-Prüfprogrammen, Ruff, Python-Kompilierung und JavaScript-Syntaxprüfung. Automatisiert geprüft sind zusätzlich Portmodi, digitale Entitätsverwaltung, Masteraustausch mit Wiederaufnahme, stabile Registry-Identitäten, digitale Geräteprofile und automatische Profil-IDs (Umlaute, Namenskollisionen, Längenlimit und Erhalt gespeicherter/manueller IDs).

@@ -1,4 +1,34 @@
 const BASE = '/ifm_iolink_static';
+const FRONTEND_REVISION = 'wiring-help-20261017';
+// Static, read-only examples. No device commands are exposed by these dialogs.
+const WIRING_HELP = {
+  2: `<div class="cable"><strong>Vorgegebenes Kabel: Phoenix Contact 1504615</strong><span>SAC-4P-M12MS/4,0-PUR/M12FS · 4 m</span></div>
+<div class="wiring-diagram-scroll" tabindex="0" role="region" aria-label="Anschlussgrafik, auf kleinen Displays horizontal scrollbar"><img class="diagram" src="${BASE}/images/wiring-do.svg" alt="Schütz LC1D18BD: Pin 4 an A1, Pin 3 an A2, Pin 1 an 13 und Pin 2 an 14."></div>
+
+<table class="wiring"><thead><tr><th>Anschluss</th><th>Funktion</th><th>Kabelbelegung Phoenix Contact*</th></tr></thead><tbody>
+<tr><td>A1 (+)</td><td>Spule · geschaltete +24 V DC</td><td><i class="swatch black"></i>Schwarz · Pin 4 · DO</td></tr>
+<tr><td>A2 (−)</td><td>Spule · 0 V</td><td><i class="swatch blue"></i>Blau · Pin 3 · L−</td></tr>
+<tr><td>13</td><td>Hilfsschließer · Versorgung</td><td><i class="swatch brown"></i>Braun · Pin 1 · L+</td></tr>
+<tr><td>14</td><td>Hilfsschließer · Rückmeldung</td><td><i class="swatch white"></i>Weiß · Pin 2 · DI2</td></tr>
+<tr><td>21 / 22</td><td>Hilfsöffner</td><td class="unused">Unbenutzt in diesem Beispiel</td></tr>
+</tbody></table><p class="adapter">Das vorgegebene Kabel hat M12-Stecker und M12-Buchse. Für Schraubklemmen ist ein geeigneter Klemmenübergang nötig.</p><div class="footnote"><strong>* Aderfarben: Durchgang prüfen.</strong> Farben ↔ Pins sind für dieses Kabel noch nicht herstellerbestätigt.<br><strong>Anschlussentwurf – elektrische Freigabe offen:</strong> DO-Spulenverträglichkeit und DI2-Kontaktstrom prüfen.</div>
+<div class="feedback"><div><strong>DO → Spule ansteuern</strong>Die Master-Rückmeldung zeigt den Ausgangszustand.</div><div><strong>DI2 ← Hilfskontakt 13–14</strong>Kontakt geschlossen = Rückmeldung EIN. Kein Laststromnachweis.</div></div>
+<p class="tech">Spule: 5,4 W ≈ 225 mA bei 24 V / 20 °C; AL1352-Ausgang max. 300 mA. Daraus allein folgt keine Schaltfreigabe.<br>LC1D18BD-Hilfskontakt: mindestens 5 mA / 17 V laut Hersteller. LAD4TBDL bleibt eingebaut: bidirektionale Begrenzung.</p>
+<div class="sources"><span>Herstellerquellen:</span><a href="https://www.phoenixcontact.com/en-us/products/sensoractuator-cable-sac-4p-m12ms-40-purm12fs-1504615?type=pdf" target="_blank" rel="noopener noreferrer">Phoenix Contact 1504615</a><a href="https://media.ifm.com/dam/07d8440a-39b5-4487-af9d-dd96e0cb8bb7/Original/AL1352-00_EN-GB.pdf" target="_blank" rel="noopener noreferrer">ifm AL1352</a><a href="https://www.se.com/us/en/faqs/FA112430/" target="_blank" rel="noopener noreferrer">Schneider Electric</a></div>
+`,
+  1: `<div class="cable"><strong>Vorgegebenes Kabel: Phoenix Contact 1504615</strong><span>SAC-4P-M12MS/4,0-PUR/M12FS · 4 m</span></div><div class="wiring-diagram-scroll" tabindex="0" role="region" aria-label="Anschlussgrafik, auf kleinen Displays horizontal scrollbar"><img class="diagram" src="${BASE}/images/wiring-di.svg" alt="Zwei unabhängige Schaltkontakte: Pin 1 gemeinsam, Kontakt 1 an Pin 4 DI1, Kontakt 2 an Pin 2 DI2. Pin 3 isoliert."></div>
+<table class="wiring"><thead><tr><th>Anschluss</th><th>Funktion</th><th>Kabelbelegung Phoenix Contact*</th></tr></thead><tbody>
+<tr><td>Kontakt 1 + 2</td><td>Gemeinsame Versorgung · je eine Kontaktseite</td><td><i class="swatch brown"></i>Braun · Pin 1 · L+</td></tr>
+<tr><td>Kontakt 1</td><td>Andere Kontaktseite · Signal an DI1</td><td><i class="swatch black"></i>Schwarz · Pin 4 · DI1</td></tr>
+<tr><td>Kontakt 2</td><td>Andere Kontaktseite · Signal an DI2</td><td><i class="swatch white"></i>Weiß · Pin 2 · DI2</td></tr>
+<tr><td>Kein Kontakt</td><td>Am Kontaktende unbenutzt · einzeln isolieren</td><td><i class="swatch blue"></i>Blau · Pin 3 · L−</td></tr></tbody></table>
+<p class="adapter">Das Kabel hat M12-Stecker und M12-Buchse. Für die Kontakte und die gemeinsame Abzweigung ist ein geeigneter Klemmenübergang nötig.</p>
+<div class="footnote"><strong>* Aderfarben: Durchgang prüfen.</strong> Die Zuordnung der Farben zu den Pins ist für dieses Kabel noch nicht herstellerbestätigt.<br><strong>Anschlussentwurf zur Abstimmung.</strong> Pinbelegung und Eignung der verwendeten Kontakte vor Anschluss prüfen.</div>
+<div class="feedback"><div><strong>Kontakt 1 → DI1 · Pin 4</strong>Geschlossen: L+ liegt an DI1 an. Kontakt 2 bleibt unabhängig.</div><div><strong>Kontakt 2 → DI2 · Pin 2</strong>Geschlossen: L+ liegt an DI2 an. Kontakt 1 bleibt unabhängig.</div></div>
+<p class="tech">Plus-schaltendes Funktionsschema, aus der ifm-Pinbelegung und den Eingangspegeln abgeleitet. HIGH: 11–30 V DC; LOW: 0–5 V DC. Pin 4 muss auf DI stehen.<br>Nur passive, potentialfreie Kontakte verwenden; keine Fremdspannung einspeisen. Die L−-Versorgung des Masters bleibt angeschlossen.</p>
+<div class="sources"><span>Herstellerquellen:</span><a href="https://www.phoenixcontact.com/en-us/products/sensoractuator-cable-sac-4p-m12ms-40-purm12fs-1504615?type=pdf">Phoenix Contact 1504615</a><a href="https://media.ifm.com/dam/07d8440a-39b5-4487-af9d-dd96e0cb8bb7/Original/AL1352-00_EN-GB.pdf">ifm AL1352</a><a href="https://www.ifm.com/mounting/80284138UK.pdf">ifm Betriebsanleitung</a></div>`
+};
+const hasWiringHelp = (master, item) => ['AL1350','AL1352'].includes(master?.identity?.model) && [1,2].includes(item?.mode);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initialProfile = () => ({id:'custom_mein_sensor',name:'Mein Sensor',manufacturer:'',model:'',description:'',purpose:'',image:'',notes:'',length:2,fields:[{key:'value',name:'Messwert',type:'int',offset:0,length:2,scale:0.01,precision:2}]});
 const digitalProfile = () => ({id:'custom_mein_digitalgeraet',kind:'digital',name:'Mein digitales Gerät',manufacturer:'',model:'',description:'',purpose:'',image:'',notes:'',length:0,fields:[]});
@@ -44,7 +74,7 @@ class IfmIolinkPanel extends HTMLElement {
   }
   set hass(value) { this._hass=value; if (this.isConnected && !this.started) this.start(); }
   connectedCallback() { if (this._hass) this.start(); }
-  disconnectedCallback() { clearInterval(this.timer); this.stopReplacementPolling?.(); this.replacementDialog?.close(); this.resizeObserver?.disconnect(); this.started=false; }
+  disconnectedCallback() { clearInterval(this.timer); this.stopReplacementPolling?.(); this.replacementDialog?.close(); this.wiringDialog?.close(); this.resizeObserver?.disconnect(); this.started=false; }
   start() { if(this.started)return; this.started=true; this.render(); this.refresh(); this.timer=setInterval(()=>this.refresh(),2000); }
   async call(type, values={}) { return this._hass.callWS({type:`ifm_iolink/${type}`,...values}); }
   async refresh(force=false) {
@@ -66,8 +96,14 @@ class IfmIolinkPanel extends HTMLElement {
     // Live snapshots may change while the replacement job runs. Keep its dialog
     // and progress visible; closing it performs a full refresh of the overview.
     if(this.replacementDialog?.open)return;
+    if(this.wiringDialog?.open){
+      this.wiringNeedsRender=true;
+      const context=this.wiringContext,master=this.data.masters.find(m=>m.entry_id===context.entryId);
+      if(master?.ports?.[context.port]?.mode!==context.mode || !hasWiringHelp(master,master?.ports?.[context.port]))this.wiringDialog.close();
+      return;
+    }
     const master=this.master;
-    this.shadowRoot.innerHTML=`<link rel="stylesheet" href="${BASE}/panel.css?v=${esc(this.data.version || '')}"><div class="app">
+    this.shadowRoot.innerHTML=`<link rel="stylesheet" href="${BASE}/panel.css?v=${esc(this.data.version || '')}&ui=${FRONTEND_REVISION}"><div class="app">
       <header><div class="brand"><img class="brand-icon" src="${BASE}/images/integration-icon.png" alt="ifm IO-Link Logo"><div><span class="eyebrow">LOKAL VERBUNDEN</span><h1>ifm IO-Link Command Center</h1></div></div><div class="header-actions"><a href="/config/integrations/dashboard/add?domain=ifm_iolink">+ Master hinzufügen</a><span class="tag">AL1350 or AL1352 with IoT core</span></div></header>
       <div class="toolbar"><nav><button data-page="overview" class="${this.page==='overview'?'active':''}">Portübersicht</button><button data-page="library" class="${this.page==='library'?'active':''}">Gerätebibliothek <span>${this.data.profiles.length}</span></button></nav>
       ${master?`<label class="master-choice">Master <select id="master">${this.data.masters.map(m=>`<option value="${esc(m.entry_id)}" ${m===master?'selected':''}>${esc(m.name)}</option>`).join('')}</select></label>`:''}</div>
@@ -93,7 +129,7 @@ class IfmIolinkPanel extends HTMLElement {
     const item=this.master.ports[number] || {};const profile=this.profile(displayProfileId(item));const assignment=item.assignment || {};
     const side=number%2?'left':'right';
     return `<div role="button" tabindex="0" class="port-card ${side} ${number===this.port?'selected':''}" data-port="${number}" style="grid-row:${Math.ceil(number/2)};grid-column:${side==='left'?1:3}">
-      <span class="port-line"></span><div class="port-card-top"><span class="port-label">X${String(number).padStart(2,'0')}</span><button class="signal-badge unknown" data-toggle="${number}" type="button" disabled></button><span class="signal-badge unknown" data-di2="${number}" role="img">DI2</span></div>
+      <span class="port-line"></span><div class="port-card-top"><span class="port-label">X${String(number).padStart(2,'0')}</span><button class="signal-badge unknown" data-toggle="${number}" type="button" disabled></button><span class="signal-badge unknown" data-di2="${number}" role="img">DI2</span>${hasWiringHelp(this.master,item)?`<button class="wiring-help-button" data-wiring-help="${number}" type="button" aria-label="Anschlusshilfe ${modeLabel(item.mode)} für Port ${number} öffnen" aria-haspopup="dialog" title="Anschlussbeispiel anzeigen">?</button>`:''}</div>
       <div class="device-row">${profile?.image?`<img src="${esc(profile.image)}" alt="${esc(profile.model || profile.name)}" referrerpolicy="no-referrer">`:'<span class="unknown-device">?</span>'}<div><strong>${esc(assignment.name || profile?.name || profile?.model || 'Gerät auswählen')}</strong><small>${esc(assignment.location || (profile?.kind==='digital'?'Digitales Gerät':(item.identity?.productname ? 'Gerät erkannt' : 'Noch nicht zugewiesen')))}</small></div></div>
       <div class="card-values">${(item.mode===3?profile?.fields || []:[]).filter(f=>f.type!=='bool').slice(0,2).map(f=>`<div><small>${esc(f.name)}</small><b data-value="${number}:${esc(f.key)}">—</b></div>`).join('') || `<small>${esc(isDigitalMode(item)?(item.mode===2?'Digitalausgang · Rückmeldung vom Master':'Digitaleingänge · Status vom Master'):(item.identity?.productname || 'Unbekannt / kein Gerät'))}</small>`}</div>
       ${assignment.purpose?`<div class="purpose">${esc(assignment.purpose)}</div>`:''}</div>`;
@@ -138,6 +174,23 @@ class IfmIolinkPanel extends HTMLElement {
     this.download(`iolink-port-${this.port}-debug.json`,result); return result;
   }
   download(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  showWiringHelp(port, opener){
+    const master=this.master,item=master?.ports?.[port];
+    if(!hasWiringHelp(master,item) || this.wiringDialog?.open)return;
+    const mode=item.mode,dialog=document.createElement('dialog');
+    dialog.className='wiring-help';
+    dialog.setAttribute('aria-labelledby','wiring-help-title');
+    this.wiringContext={entryId:master.entry_id,port,mode};this.wiringNeedsRender=false;
+    dialog.innerHTML=`<div class="pophead"><div><div class="eyebrow">${esc(master.name)} · X${String(port).padStart(2,'0')} · ${mode===2?'DIGITALAUSGANG MIT RÜCKMELDUNG':'DIGITALEINGÄNGE DI1 / DI2'}</div><h2 id="wiring-help-title">Anschlussbeispiel · ${mode===2?'Schütz mit Rückmeldung':'Zwei Schaltkontakte'}</h2><p>${mode===2?'Schneider Electric LC1D18BD als Anschlussbeispiel':'Potentialfreie Kontakte mit gemeinsamer Versorgung'}</p></div><button class="close" type="button" autofocus aria-label="Anschlusshilfe schließen">×</button></div><div class="body">${WIRING_HELP[mode]}</div>`;
+    this.wiringDialog=dialog;
+    dialog.onclose=()=>{
+      dialog.remove();this.wiringDialog=null;this.wiringContext=null;
+      if(this.isConnected!==false){if(this.wiringNeedsRender)this.render();this.wiringNeedsRender=false;const current=this.shadowRoot.querySelector(`[data-wiring-help="${port}"]`);(current || this.shadowRoot.querySelector(`[data-port="${port}"]`) || opener)?.focus();}
+    };
+    dialog.querySelector('.close').onclick=()=>dialog.close();
+    dialog.addEventListener('click',event=>{if(event.target===dialog){const box=dialog.getBoundingClientRect();if(event.clientX<box.left || event.clientX>box.right || event.clientY<box.top || event.clientY>box.bottom)dialog.close();}});
+    this.shadowRoot.append(dialog);dialog.showModal();
+  }
   async toggleOutput(port){
     const master=this.master,item=master?.ports?.[port];
     if(!modeStatus(item,master?.online).clickable)return;
@@ -161,6 +214,7 @@ class IfmIolinkPanel extends HTMLElement {
     this.notify(failure || 'Portmodus durch Rücklesen bestätigt.',!!failure);
   }
   bindOverview(){
+    this.shadowRoot.querySelectorAll('[data-wiring-help]').forEach(button=>button.onclick=event=>{event.stopPropagation();this.showWiringHelp(Number(button.dataset.wiringHelp),button);});
     this.shadowRoot.querySelector('#apply-mode')?.addEventListener('click',()=>this.changeMode());
     this.shadowRoot.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=e=>{e.stopPropagation();this.toggleOutput(Number(b.dataset.toggle));});
     this.shadowRoot.querySelectorAll('[data-output]').forEach(b=>b.onclick=async()=>{

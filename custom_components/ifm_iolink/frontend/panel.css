@@ -38,3 +38,36 @@
 .card-values>small:only-child{grid-column:1 / -1}
 .port-card .purpose{min-height:26px}
 @media(max-width:700px){.port-card .device-row{min-height:40px}.port-card .card-values{min-height:48px}.card-values>div{padding-right:3px}}
+
+/* Read-only DI/DO connection examples; all popup styles are scoped. */
+.port-card-top .wiring-help-button{margin-left:auto;flex-shrink:0;width:24px;height:24px;min-width:24px;padding:0;border:1px solid #d9e1e9;border-radius:50%;background:#fff;color:#7b8b9d;font-size:15px;font-weight:700;line-height:1;display:grid;place-items:center}
+.port-card-top .wiring-help-button:hover{color:#d67b24;border-color:#d67b24;background:#fff8ef}
+.wiring-help{width:min(1020px,calc(100% - 28px));max-width:1020px;max-height:calc(100dvh - 28px);margin:auto;padding:0;overflow:auto;background:#fff;color:#243140;border:1px solid #dde4ec;border-radius:18px;box-shadow:0 14px 42px #28384d30;font:15px/1.5 Arial,sans-serif}
+.wiring-help::backdrop{background:#1d2d3f80}
+.wiring-help .pophead{padding:19px 26px 15px;border-bottom:1px solid #e8edf2;display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.wiring-help h2{font-size:22px;letter-spacing:-.4px;margin:1px 0;overflow-wrap:anywhere}
+.wiring-help .pophead p{font-size:13px;color:#778598;margin:3px 0 0}
+.wiring-help .close{background:#f5f7fa;border:0;border-radius:50%;width:32px;height:32px;flex-shrink:0;padding:0;color:#788599;font-size:22px;line-height:1}
+.wiring-help .body{padding:16px 26px 21px}
+.wiring-help .cable{display:block;font-size:12px;color:#708094;padding:0 0 5px;line-height:1.6;overflow-wrap:anywhere}
+.wiring-help .cable strong,.wiring-help .cable span{display:block}
+.wiring-help .cable strong{color:#596c7e}
+.wiring-help .diagram{display:block;width:100%;height:auto;min-width:650px}
+.wiring-help .wiring-diagram-scroll{overflow-x:auto}
+.wiring-help .wiring{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+.wiring-help .wiring th{text-align:left;color:#687b8f;background:#f2f5f8;font-size:12px;padding:10px 12px;border-bottom:1px solid #dce3eb}
+.wiring-help .wiring td{padding:9px 12px;border-bottom:1px solid #e8edf2;overflow-wrap:anywhere}
+.wiring-help .wiring td:first-child{font-weight:700;width:15%}
+.wiring-help .wiring th:last-child{width:39%}
+.wiring-help .swatch{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:9px;vertical-align:-1px}
+.wiring-help .black{background:#29313a}.wiring-help .blue{background:#2384d2}.wiring-help .brown{background:#965a32}.wiring-help .white{background:#fff;border:1.5px solid #9caab8}
+.wiring-help .unused{color:#8793a1}
+.wiring-help .adapter{font-size:11px;line-height:1.5;color:#7b8b9d;margin:9px 0 0}
+.wiring-help .footnote{font-size:12px;line-height:1.5;background:#fff7e9;border:1px solid #f2d6a8;border-radius:8px;padding:10px 13px;color:#875e2b;margin:9px 0 12px}
+.wiring-help .feedback{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.wiring-help .feedback>div{border:1px solid #e3e8ee;border-radius:9px;padding:10px 13px;background:#fafbfd;font-size:12px;color:#718094}
+.wiring-help .feedback strong{display:block;color:#35485b;font-size:13px;margin-bottom:2px}
+.wiring-help .tech{font-size:11px;color:#7e8c9d;line-height:1.55;margin:11px 0 0}
+.wiring-help .sources{border-top:1px solid #e8edf2;margin-top:13px;padding-top:10px;font-size:11px;color:#8794a4;display:flex;gap:14px;flex-wrap:wrap}
+.wiring-help .sources a{color:#526d87;text-decoration:underline}
+@media(max-width:700px){.wiring-help .pophead{padding:16px}.wiring-help .body{padding:13px}.wiring-help .feedback{grid-template-columns:1fr}.wiring-help .wiring{font-size:11px}.wiring-help .wiring td,.wiring-help .wiring th{padding:8px 5px}.wiring-help .wiring th{font-size:10px}.wiring-help h2{font-size:19px}.port-card-top .wiring-help-button{width:20px;height:20px;min-width:20px;font-size:13px}}

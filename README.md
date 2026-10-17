@@ -27,7 +27,15 @@ Im grafischen Command Center steht der Master in der Mitte. Seine Ports führen 
 
 <p align="center"><a href="#funktionen">Funktionen</a> · <a href="#mein-praxisprojekt">Praxisprojekt</a> · <a href="#installation">Installation</a> · <a href="#parametersicherung--sensortausch">Parametersicherung</a> · <a href="#eigene-ger%C3%A4te--iodd-import">Eigene Geräte</a></p>
 
-> **Stand 0.1.5:** Reguläres Release. AL1350 und AL1352 sowie der Masteraustausch wurden an einer realen Anlage mit Home Assistant 2026.9.4 geprüft. PN7094, PN7096 und BADU FlowSonic Plus liefern reale Messwerte. Die Oberfläche ist derzeit deutsch. [Prüfumfang und Grenzen](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/validation.md)
+> **Stand 0.1.6:** Reguläres Release. AL1350 und AL1352 sowie der Masteraustausch wurden an einer realen Anlage mit Home Assistant 2026.9.4 geprüft. PN7094, PN7096 und BADU FlowSonic Plus liefern reale Messwerte. Die Oberfläche ist derzeit deutsch. [Prüfumfang und Grenzen](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/blob/main/docs/validation.md)
+
+## Neu in v0.1.6
+
+**Anschlusshilfe direkt am Port:** Das Fragezeichen an DI-/DO-Portkarten öffnet ein zum Modus passendes Anschlussbeispiel mit Grafik und Tabelle. DO zeigt einen Schneider LC1D18BD mit separatem DI2-Hilfskontakt, DI zeigt zwei unabhängige potentialfreie Kontakte an DI1 und DI2. Als Kabelbeispiel dient Phoenix Contact 1504615. Die Hilfe ist rein informativ und schaltet keine Ausgänge.
+
+![DO-Anschlusshilfe am AL1352 im laufenden Home Assistant](https://raw.githubusercontent.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/main/docs/images/screenshots/wiring-help-do-live.png)
+
+Die Grafik ist ein **Anschlussentwurf**: Die Hinweise zur Prüfung der Aderfarben, Pinbelegung und elektrischen Eignung bleiben sichtbar. DO wurde in der laufenden Anlage geprüft; DI lokal einschließlich Mobilansicht. Eine neue Frontend-Ladeadresse sorgt dafür, dass die aktualisierte Oberfläche geladen wird. [Releasehinweise v0.1.6](https://github.com/JS-DE-Tech/hacs-ifm-io-link-master-al13xx-iot/releases/tag/v0.1.6)
 
 ## Neu in v0.1.5
 

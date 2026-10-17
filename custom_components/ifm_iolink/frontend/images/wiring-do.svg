@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 530" role="img" aria-label="Schütz in Ansicht des Nutzerfotos: obere Steuerklemmen 13, 21, A1 Plus; unten 14, 22, A2 Minus. Pin 4 schwarz zu A1, Pin 1 braun zu 13, Pin 2 weiß zu 14 und Pin 3 blau zu A2. Farbzuordnung noch durch Durchgangsprüfung bestätigen.">
+<defs><g id="screw"><circle r="13" fill="#d3d7d6" stroke="#8a9290" stroke-width="2"/><path d="M-7 -7L7 7M7 -7L-7 7" stroke="#596260" stroke-width="3"/></g></defs>
+<style>text{font-family:Arial,sans-serif;fill:#283543}.title{font-size:18px;font-weight:700}.sub{font-size:13px;fill:#708094}.label{font-size:15px;font-weight:600}.tiny{font-size:12px;fill:#778494}.pin{font-size:14px;font-weight:700;text-anchor:middle;dominant-baseline:central}.terminal{font-size:16px;font-weight:700}.muted{font-size:13px;fill:#adbac2}</style>
+<text x="22" y="30" class="title">ifm IO-Link · Port</text>
+<text x="577" y="30" class="title">Schneider LC1D18BD</text>
+<text x="577" y="49" class="sub">Anschlussansicht · schematisch</text>
+<rect x="14" y="73" width="216" height="390" rx="16" fill="#fff8f0" stroke="#edcaaa"/>
+<text x="31" y="100" class="tiny">M12-PORT · MODUS DO</text>
+<text x="31" y="135" class="label">DO · Schaltbefehl</text>
+<text x="31" y="205" class="label">L+ · 24 V DC</text>
+<text x="31" y="335" class="label">DI2 · Rückmeldung</text>
+<text x="31" y="405" class="label">L− · 0 V</text>
+<text x="31" y="444" class="tiny">Pin-Nummern, keine Steckeransicht</text>
+<!-- Device face follows the terminal arrangement in the user's photo. -->
+<rect x="579" y="94" width="307" height="371" rx="6" fill="#3d4549" stroke="#263138" stroke-width="2"/>
+<text x="599" y="112" class="muted">1 L1</text><text x="702" y="112" class="muted">3 L2</text><text x="804" y="112" class="muted">5 L3</text>
+<use href="#screw" x="624" y="131"/><use href="#screw" x="727" y="131"/><use href="#screw" x="830" y="131"/>
+<rect x="566" y="149" width="334" height="275" rx="6" fill="#f4f1e8" stroke="#c9c7bc" stroke-width="2"/>
+<path d="M566 211H900M566 366H900" stroke="#c7c5ba"/>
+<text x="653" y="164" class="terminal" text-anchor="middle">13 NO</text>
+<text x="752" y="164" class="terminal" text-anchor="middle" style="fill:#87918f">21 NC</text>
+<text x="850" y="164" class="terminal" text-anchor="middle">+ A1</text>
+<use href="#screw" x="653" y="185"/><use href="#screw" x="752" y="185"/><use href="#screw" x="850" y="185"/>
+<text x="589" y="240" font-size="20" font-weight="700" style="fill:#229b5b">Schneider</text>
+<text x="589" y="255" font-size="12" style="fill:#229b5b">Electric</text>
+<path d="M707 235H876" stroke="#229b5b" stroke-width="5"/>
+<rect x="590" y="270" width="286" height="78" rx="3" fill="#e8e5dc" stroke="#d0cec3"/>
+<rect x="658" y="280" width="134" height="19" rx="2" fill="#525951"/>
+<text x="732" y="321" text-anchor="middle" font-size="16" style="fill:#788172">LC1D18BD</text>
+<text x="732" y="339" text-anchor="middle" font-size="12" style="fill:#788172">TeSys D · 24 V DC</text>
+<use href="#screw" x="653" y="391"/><use href="#screw" x="752" y="391"/><use href="#screw" x="850" y="391"/>
+<text x="653" y="417" class="terminal" text-anchor="middle">14 NO</text>
+<text x="752" y="417" class="terminal" text-anchor="middle" style="fill:#87918f">22 NC</text>
+<text x="850" y="417" class="terminal" text-anchor="middle">− A2</text>
+<use href="#screw" x="624" y="440"/><use href="#screw" x="727" y="440"/><use href="#screw" x="830" y="440"/>
+<text x="599" y="461" class="muted">2 T1</text><text x="702" y="461" class="muted">4 T2</text><text x="804" y="461" class="muted">6 T3</text>
+<!-- Coloured paths are assignment leaders, not depictions of terminal entry holes. -->
+<path d="M230 130H439V75H960V185H867" fill="none" stroke="#fff" stroke-width="9" stroke-linejoin="round"/>
+<path d="M230 130H439V75H960V185H867" fill="none" stroke="#29313a" stroke-width="5" stroke-linejoin="round"/>
+<path d="M230 200H487V185H636" fill="none" stroke="#fff" stroke-width="9" stroke-linejoin="round"/>
+<path d="M230 200H487V185H636" fill="none" stroke="#965a32" stroke-width="5" stroke-linejoin="round"/>
+<path d="M230 330H487V391H636" fill="none" stroke="#adb6bf" stroke-width="7" stroke-linejoin="round"/>
+<path d="M230 330H487V391H636" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+<path d="M230 400H439V487H960V391H867" fill="none" stroke="#fff" stroke-width="9" stroke-linejoin="round"/>
+<path d="M230 400H439V487H960V391H867" fill="none" stroke="#2384d2" stroke-width="5" stroke-linejoin="round"/>
+<g fill="none" stroke-width="3"><circle cx="850" cy="185" r="17" stroke="#29313a"/><circle cx="653" cy="185" r="17" stroke="#965a32"/><circle cx="653" cy="391" r="17" stroke="#a9b3bd"/><circle cx="850" cy="391" r="17" stroke="#2384d2"/></g>
+<g fill="#fff" stroke="#d9af8a" stroke-width="1.5"><circle cx="218" cy="130" r="15"/><circle cx="218" cy="200" r="15"/><circle cx="218" cy="330" r="15"/><circle cx="218" cy="400" r="15"/></g>
+<text x="218" y="130" class="pin">4</text><text x="218" y="200" class="pin">1</text><text x="218" y="330" class="pin">2</text><text x="218" y="400" class="pin">3</text>
+<text x="320" y="117" class="label" text-anchor="middle">Schwarz (BK)*</text><text x="320" y="187" class="label" text-anchor="middle">Braun (BN)*</text><text x="320" y="317" class="label" text-anchor="middle">Weiß (WH)*</text><text x="320" y="387" class="label" text-anchor="middle">Blau (BU)*</text>
+<text x="319" y="247" class="sub" text-anchor="middle">Phoenix Contact</text><text x="319" y="266" class="label" text-anchor="middle">1504615 · 4 m</text><text x="319" y="285" class="tiny" text-anchor="middle">vier Kabeladern*</text>
+<text x="500" y="520" text-anchor="middle" class="tiny">Farbige Linien markieren die Zuordnung zu den Steuerklemmen · Leistungsklemmen bleiben hier unbeschaltet</text>
+</svg>
